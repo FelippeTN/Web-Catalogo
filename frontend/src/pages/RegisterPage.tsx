@@ -12,24 +12,24 @@ export default function RegisterPage({ onAuthenticated }: Props) {
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
+  const [number, setNumber] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError('')
-    if (name && email && password) {
+    if (name && email && number && password) {
       try {
         const response = await fetch(`${apiUrl}public/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ username: name, email, password }),
+          body: JSON.stringify({ username: name, email, number, password }),
         })
 
         if (response.ok) {
-          // Auto login or redirect to login
           navigate('/login')
         } else {
           const data = await response.json()
@@ -71,6 +71,18 @@ export default function RegisterPage({ onAuthenticated }: Props) {
             placeholder="seu@email.com"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
+            className="w-full px-4 py-3 border border-gray-200 rounded-lg text-base focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"
+          />
+        </div>
+
+        <div className="flex flex-col gap-2">
+          <label htmlFor="number" className="text-sm font-semibold text-gray-700">Número</label>
+          <input
+            id="number"
+            type="text"
+            placeholder="(99) 99999-9999"
+            value={number}
+            onChange={(e) => setNumber(e.target.value)}
             className="w-full px-4 py-3 border border-gray-200 rounded-lg text-base focus:outline-none focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all"
           />
         </div>

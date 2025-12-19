@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
-import './App.css'
 
 import CatalogPage from './pages/CatalogPage'
 import LoginPage from './pages/LoginPage'
