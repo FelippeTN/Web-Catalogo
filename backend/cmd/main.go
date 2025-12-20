@@ -20,12 +20,20 @@ func main() {
 	{
 		publicRoutes.POST("/login", handlers.Login)
 		publicRoutes.POST("/register", handlers.Register)
+		publicRoutes.GET("/products", handlers.GetProducts)
+		publicRoutes.GET("/collections", handlers.GetPublicCollections)
 	}
 
 	protectedRoutes := r.Group("/protected")
 	protectedRoutes.Use(middleware.AuthenticationMiddleware())
 	{
-		// Protected routes here
+		protectedRoutes.POST("/collections", handlers.CreateCollection)
+		protectedRoutes.GET("/collections", handlers.GetMyCollections)
+		protectedRoutes.PUT("/collections/:id", handlers.UpdateCollection)
+		protectedRoutes.DELETE("/collections/:id", handlers.DeleteCollection)
+
+		protectedRoutes.POST("/products", handlers.CreateProduct)
+		protectedRoutes.GET("/products", handlers.GetMyProducts)
 	}
 
 	r.Run(":8080")

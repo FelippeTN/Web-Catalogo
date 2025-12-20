@@ -33,5 +33,13 @@ func ConnectDatabase() {
 		log.Fatal("Failed to migrate database!", err)
 	}
 
+	err = database.AutoMigrate(
+		&models.Collection{},
+		&models.Product{},
+	)
+	if err != nil {
+		log.Fatal("Failed to migrate database!", err)
+	}
+
 	DB = database
 }
