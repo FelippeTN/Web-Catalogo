@@ -4,6 +4,7 @@ import { Navigate, Route, Routes } from 'react-router-dom'
 import CatalogPage from './pages/CatalogPage'
 import CollectionPage from './pages/CollectionPage'
 import LoginPage from './pages/LoginPage'
+import PublicCatalogPage from './pages/PublicCatalogPage'
 import RegisterPage from './pages/RegisterPage'
 import WelcomePage from './pages/WelcomePage'
 
@@ -30,6 +31,8 @@ function App() {
           )
         }
       />
+
+      <Route path="/c/:token" element={<PublicCatalogPage />} />
 
       <Route
         path="/login"

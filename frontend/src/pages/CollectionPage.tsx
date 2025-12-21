@@ -185,6 +185,29 @@ export default function CollectionPage({ onLogout }: Props) {
     }
   }
 
+  async function handleShareCollection() {
+    if (!collection) return
+    try {
+      const res = await collectionsService.share(collection.id)
+      const url = `${window.location.origin}/c/${res.share_token}`
+
+      try {
+        await navigator.clipboard.writeText(url)
+      } catch {
+        // ignore
+      }
+
+      window.prompt('Link do catálogo (copiado se possível):', url)
+    } catch (err) {
+      if (isUnauthorized(err)) {
+        onLogout()
+        navigate('/login', { replace: true })
+        return
+      }
+      setErrorMessage(err instanceof Error ? err.message : 'Erro ao gerar link')
+    }
+  }
+
   function startEditProduct(p: Product) {
     setProductUpdateError(null)
     setEditingProductId(p.id)
@@ -322,6 +345,15 @@ export default function CollectionPage({ onLogout }: Props) {
                   >
                     {isEditingCollection ? 'Fechar' : 'Editar'}
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleShareCollection()}
+                    className="px-3 py-2 text-sm rounded-lg bg-transparent text-gray-600 hover:bg-gray-50 transition-colors"
+                    disabled={isUpdatingCollection}
+                  >
+                    Compartilhar
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => void handleDeleteCollection()}

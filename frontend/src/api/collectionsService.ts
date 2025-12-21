@@ -1,5 +1,5 @@
 import type { HttpClient } from './httpClient'
-import type { Collection, CreateCollectionInput, UpdateCollectionInput } from './types'
+import type { Collection, CreateCollectionInput, PublicCatalogResponse, ShareCollectionResponse, UpdateCollectionInput } from './types'
 
 export interface CollectionsService {
   getMine(): Promise<Collection[]>
@@ -7,6 +7,8 @@ export interface CollectionsService {
   update(id: number, input: UpdateCollectionInput): Promise<Collection>
   remove(id: number): Promise<void>
   getPublic(ownerId: number): Promise<Collection[]>
+  share(id: number): Promise<ShareCollectionResponse>
+  getPublicCatalogByToken(token: string): Promise<PublicCatalogResponse>
 }
 
 export class ApiCollectionsService implements CollectionsService {
@@ -36,5 +38,13 @@ export class ApiCollectionsService implements CollectionsService {
     return this.http.request<Collection[]>('GET', '/public/collections', {
       query: { owner_id: ownerId },
     })
+  }
+
+  share(id: number): Promise<ShareCollectionResponse> {
+    return this.http.request<ShareCollectionResponse>('POST', `/protected/collections/${id}/share`, { auth: true })
+  }
+
+  getPublicCatalogByToken(token: string): Promise<PublicCatalogResponse> {
+    return this.http.request<PublicCatalogResponse>('GET', `/public/catalogs/${encodeURIComponent(token)}`)
   }
 }

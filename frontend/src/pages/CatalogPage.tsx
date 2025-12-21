@@ -134,6 +134,28 @@ export default function CatalogPage({ onLogout }: Props) {
     }
   }
 
+  async function handleShareCollection(id: string) {
+    try {
+      const res = await collectionsService.share(Number(id))
+      const url = `${window.location.origin}/c/${res.share_token}`
+
+      try {
+        await navigator.clipboard.writeText(url)
+      } catch {
+        // ignore
+      }
+
+      window.prompt('Link do catálogo (copiado se possível):', url)
+    } catch (err) {
+      if (isUnauthorized(err)) {
+        onLogout()
+        navigate('/login', { replace: true })
+        return
+      }
+      setUpdateError(err instanceof Error ? err.message : 'Erro ao gerar link')
+    }
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       <header className="sticky top-0 z-10 backdrop-blur-md border-b border-gray-200 bg-white/70 px-6 py-4 flex items-center justify-between">
@@ -306,6 +328,15 @@ export default function CatalogPage({ onLogout }: Props) {
                     >
                       Editar
                     </button>
+
+                    <button
+                      className="px-3 py-2 text-sm rounded-lg bg-transparent text-gray-600 hover:bg-gray-50 transition-colors"
+                      type="button"
+                      onClick={() => void handleShareCollection(c.id)}
+                    >
+                      Compartilhar
+                    </button>
+
                     <button
                       className="px-3 py-2 text-sm rounded-lg bg-transparent text-red-600 hover:bg-red-50 transition-colors"
                       type="button"

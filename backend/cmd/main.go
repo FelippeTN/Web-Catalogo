@@ -32,6 +32,7 @@ func main() {
 		publicRoutes.POST("/register", handlers.Register)
 		publicRoutes.GET("/products", handlers.GetProducts)
 		publicRoutes.GET("/collections", handlers.GetPublicCollections)
+		publicRoutes.GET("/catalogs/:token", handlers.GetPublicCatalogByToken)
 	}
 
 	protectedRoutes := r.Group("/protected")
@@ -41,6 +42,7 @@ func main() {
 		protectedRoutes.GET("/collections", handlers.GetMyCollections)
 		protectedRoutes.PUT("/collections/:id", handlers.UpdateCollection)
 		protectedRoutes.DELETE("/collections/:id", handlers.DeleteCollection)
+		protectedRoutes.POST("/collections/:id/share", handlers.ShareCollection)
 
 		protectedRoutes.POST("/products", handlers.CreateProduct)
 		protectedRoutes.GET("/products", handlers.GetMyProducts)

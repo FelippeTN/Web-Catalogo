@@ -8,6 +8,7 @@ export type UpdateProductInput = {
 export type Collection = {
   id: number
   owner_id: number
+  share_token?: string | null
   name: string
   description: string
   created_at: string
@@ -40,4 +41,13 @@ export type CreateProductInput = {
   description: string
   price: number
   collection_id?: number | null
+}
+
+export type ShareCollectionResponse = {
+  share_token: string
+}
+
+export type PublicCatalogResponse = {
+  collection: Collection
+  products: Product[]
 }
