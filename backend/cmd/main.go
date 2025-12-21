@@ -1,6 +1,8 @@
 package main
 
 import (
+	"time"
+
 	"github.com/FelippeTN/Web-Catalogo/backend/database"
 	"github.com/FelippeTN/Web-Catalogo/backend/handlers"
 	"github.com/FelippeTN/Web-Catalogo/backend/middleware"
@@ -14,7 +16,15 @@ func main() {
 
 	r := gin.Default()
 
-	r.Use(cors.Default())
+	r.Use(cors.New(cors.Config{
+		AllowOrigins: []string{
+			"http://localhost:5173",
+			"http://127.0.0.1:5173",
+		},
+		AllowMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowHeaders: []string{"Origin", "Content-Length", "Content-Type", "Authorization"},
+		MaxAge:       12 * time.Hour,
+	}))
 
 	publicRoutes := r.Group("/public")
 	{
