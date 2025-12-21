@@ -1,59 +1,30 @@
-import { useMemo } from 'react'
+import { useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+
+import { isUnauthorized } from '../api'
+import { useCatalogs } from '../hooks/useCatalogs'
 
 type Props = {
   onLogout: () => void
 }
 
-type Catalog = {
-  id: string
-  name: string
-  description: string
-  items: number
-  updatedAtLabel: string
-}
-
 export default function CatalogPage({ onLogout }: Props) {
   const navigate = useNavigate()
 
-  const catalogs = useMemo<Catalog[]>(
-    () => [
-      {
-        id: 'cat-01',
-        name: 'Catálogo de Produtos',
-        description: 'Lista principal de produtos com categorias e preços.',
-        items: 42,
-        updatedAtLabel: 'Atualizado hoje',
-      },
-      {
-        id: 'cat-02',
-        name: 'Catálogo de Serviços',
-        description: 'Serviços oferecidos, pacotes e prazos.',
-        items: 18,
-        updatedAtLabel: 'Atualizado ontem',
-      },
-      {
-        id: 'cat-03',
-        name: 'Coleção 2026',
-        description: 'Prévia de lançamentos e variações por cor/tamanho.',
-        items: 27,
-        updatedAtLabel: 'Atualizado esta semana',
-      },
-      {
-        id: 'cat-04',
-        name: 'Materiais de Marketing',
-        description: 'Banners, artes, textos e assets para campanhas.',
-        items: 12,
-        updatedAtLabel: 'Atualizado este mês',
-      },
-    ],
-    [],
-  )
+  const { catalogs, isLoading, error, errorMessage } = useCatalogs()
 
   function handleLogout() {
     onLogout()
     navigate('/')
   }
+
+  useEffect(() => {
+    if (!error) return
+    if (isUnauthorized(error)) {
+      onLogout()
+      navigate('/login', { replace: true })
+    }
+  }, [error, navigate, onLogout])
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
@@ -84,6 +55,18 @@ export default function CatalogPage({ onLogout }: Props) {
             <p className="mt-2 text-gray-500">Visualize e mantenha seus catálogos organizados.</p>
           </div>
         </div>
+
+        {isLoading && (
+          <div className="text-sm text-gray-500 mb-6">Carregando catálogos...</div>
+        )}
+
+        {!isLoading && errorMessage && (
+          <div className="text-sm text-red-600 mb-6">{errorMessage}</div>
+        )}
+
+        {!isLoading && !errorMessage && catalogs.length === 0 && (
+          <div className="text-sm text-gray-500 mb-6">Nenhuma coleção cadastrada ainda.</div>
+        )}
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" aria-label="Lista de catálogos">
           {catalogs.map((c) => (
