@@ -11,3 +11,13 @@ type Collection struct {
 	CreatedAt   time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt   time.Time `gorm:"autoUpdateTime" json:"updated_at"`
 }
+
+type CreateCollectionInput struct {
+	Name        string `json:"name" binding:"required"`
+	Description string `json:"description"`
+}
+
+type UpdateCollectionInput struct {
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+}

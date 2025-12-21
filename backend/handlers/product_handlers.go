@@ -9,20 +9,6 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-type createProductInput struct {
-	Name         string  `json:"name" binding:"required"`
-	Description  string  `json:"description" binding:"required"`
-	Price        float64 `json:"price" binding:"required"`
-	CollectionID *uint   `json:"collection_id"`
-}
-
-type updateProductInput struct {
-	Name         *string  `json:"name"`
-	Description  *string  `json:"description"`
-	Price        *float64 `json:"price"`
-	CollectionID *uint    `json:"collection_id"`
-}
-
 func CreateProduct(c *gin.Context) {
 	ownerID, ok := getUserIDFromContext(c)
 	if !ok {
@@ -30,7 +16,7 @@ func CreateProduct(c *gin.Context) {
 		return
 	}
 
-	var input createProductInput
+	var input models.CreateProductInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data"})
 		return
@@ -50,6 +36,7 @@ func CreateProduct(c *gin.Context) {
 		Name:         input.Name,
 		Description:  input.Description,
 		Price:        input.Price,
+		ImageURL:     input.ImageURL,
 	}
 
 	if err := database.DB.Create(&product).Error; err != nil {
@@ -118,7 +105,7 @@ func UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	var input updateProductInput
+	var input models.UpdateProductInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data"})
 		return
@@ -136,6 +123,9 @@ func UpdateProduct(c *gin.Context) {
 	}
 	if input.CollectionID != nil {
 		updates["collection_id"] = *input.CollectionID
+	}
+	if input.ImageURL != nil {
+		updates["image_url"] = *input.ImageURL
 	}
 	if len(updates) == 0 {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "No fields to update"})

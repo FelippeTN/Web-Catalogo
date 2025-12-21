@@ -11,16 +11,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type createCollectionInput struct {
-	Name        string `json:"name" binding:"required"`
-	Description string `json:"description"`
-}
-
-type updateCollectionInput struct {
-	Name        *string `json:"name"`
-	Description *string `json:"description"`
-}
-
 func getUserIDFromContext(c *gin.Context) (uint, bool) {
 	v, ok := c.Get("user_id")
 	if !ok || v == nil {
@@ -73,7 +63,7 @@ func CreateCollection(c *gin.Context) {
 		return
 	}
 
-	var input createCollectionInput
+	var input models.CreateCollectionInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data"})
 		return
@@ -122,7 +112,7 @@ func UpdateCollection(c *gin.Context) {
 		return
 	}
 
-	var input updateCollectionInput
+	var input models.UpdateCollectionInput
 	if err := c.ShouldBindJSON(&input); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid data"})
 		return

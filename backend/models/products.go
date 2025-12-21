@@ -9,6 +9,23 @@ type Product struct {
 	Name         string    `gorm:"not null" json:"name"`
 	Description  string    `gorm:"not null" json:"description"`
 	Price        float64   `gorm:"not null" json:"price"`
+	ImageURL     *string   `json:"image_url"`
 	CreatedAt    time.Time `gorm:"autoCreateTime" json:"created_at"`
 	UpdatedAt    time.Time `gorm:"autoUpdateTime" json:"updated_at"`
+}
+
+type CreateProductInput struct {
+	Name         string  `json:"name" binding:"required"`
+	Description  string  `json:"description" binding:"required"`
+	Price        float64 `json:"price" binding:"required"`
+	CollectionID *uint   `json:"collection_id"`
+	ImageURL     *string `json:"image_url"`
+}
+
+type UpdateProductInput struct {
+	Name         *string  `json:"name"`
+	Description  *string  `json:"description"`
+	Price        *float64 `json:"price"`
+	CollectionID *uint    `json:"collection_id"`
+	ImageURL     *string  `json:"image_url"`
 }
