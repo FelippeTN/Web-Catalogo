@@ -1,3 +1,10 @@
+export type UpdateProductInput = {
+  name?: string
+  description?: string
+  price?: number
+  collection_id?: number | null
+}
+
 export type Collection = {
   id: number
   owner_id: number

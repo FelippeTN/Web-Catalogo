@@ -58,6 +58,27 @@ export function useCatalogs() {
     }
   }, [])
 
+  async function reload() {
+    try {
+      setIsLoading(true)
+      setError(null)
+      setErrorMessage(null)
+
+      const [cols, prods] = await Promise.all([
+        collectionsService.getMine(),
+        productsService.getMine(),
+      ])
+
+      setCollections(cols)
+      setProducts(prods)
+    } catch (e) {
+      setError(e)
+      setErrorMessage(e instanceof Error ? e.message : 'Erro ao carregar dados')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const catalogs = useMemo<CatalogCard[]>(() => {
     const countByCollectionId = new Map<number, number>()
     for (const p of products) {
@@ -74,5 +95,5 @@ export function useCatalogs() {
     }))
   }, [collections, products])
 
-  return { catalogs, isLoading, error, errorMessage }
+	return { catalogs, isLoading, error, errorMessage, reload }
 }

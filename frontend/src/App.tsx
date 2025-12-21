@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 
 import CatalogPage from './pages/CatalogPage'
+import CollectionPage from './pages/CollectionPage'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import WelcomePage from './pages/WelcomePage'
@@ -57,6 +58,17 @@ function App() {
         element={
           isAuthenticated ? (
             <CatalogPage onLogout={authHandlers.onLogout} />
+          ) : (
+            <Navigate to="/login" replace />
+          )
+        }
+      />
+
+      <Route
+        path="/catalogos/:id"
+        element={
+          isAuthenticated ? (
+            <CollectionPage onLogout={authHandlers.onLogout} />
           ) : (
             <Navigate to="/login" replace />
           )
