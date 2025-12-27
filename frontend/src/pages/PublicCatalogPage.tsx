@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 
 import { collectionsService } from '../api'
+import { API_BASE_URL, joinUrl } from '../api/config'
 import type { Product } from '../api'
 
 type CartState = Record<string, number>
@@ -158,6 +159,13 @@ export default function PublicCatalogPage() {
                     <article key={p.id} className="bg-white border border-gray-200 rounded-2xl p-5 shadow-sm" aria-label={p.name}>
                       <div className="flex items-start justify-between gap-4">
                         <div>
+                          {p.image_url && (
+                            <img
+                              src={joinUrl(API_BASE_URL, p.image_url)}
+                              alt={p.name}
+                              className="w-full h-48 object-cover rounded-lg mb-3"
+                            />
+                          )}
                           <h2 className="font-semibold text-gray-900">{p.name}</h2>
                           <p className="text-sm text-gray-500 mt-1 line-clamp-2">{p.description}</p>
                         </div>

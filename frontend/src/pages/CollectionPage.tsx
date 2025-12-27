@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 
 import { collectionsService, isUnauthorized, productsService } from '../api'
+import { API_BASE_URL, joinUrl } from '../api/config'
 import type { Collection, Product } from '../api'
 
 type Props = {
@@ -35,6 +36,7 @@ export default function CollectionPage({ onLogout }: Props) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
+  const [image, setImage] = useState<File | null>(null)
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -42,6 +44,7 @@ export default function CollectionPage({ onLogout }: Props) {
   const [editProductName, setEditProductName] = useState('')
   const [editProductDescription, setEditProductDescription] = useState('')
   const [editProductPrice, setEditProductPrice] = useState('')
+  const [editProductImage, setEditProductImage] = useState<File | null>(null)
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false)
   const [productUpdateError, setProductUpdateError] = useState<string | null>(null)
 
@@ -118,10 +121,12 @@ export default function CollectionPage({ onLogout }: Props) {
         description: trimmedDesc,
         price: parsedPrice,
         collection_id: collectionId,
+        image: image,
       })
       setName('')
       setDescription('')
       setPrice('')
+      setImage(null)
       await load()
     } catch (err) {
       if (isUnauthorized(err)) {
@@ -214,6 +219,7 @@ export default function CollectionPage({ onLogout }: Props) {
     setEditProductName(p.name)
     setEditProductDescription(p.description)
     setEditProductPrice(String(p.price))
+    setEditProductImage(null)
   }
 
   function cancelEditProduct() {
@@ -222,6 +228,7 @@ export default function CollectionPage({ onLogout }: Props) {
     setEditProductName('')
     setEditProductDescription('')
     setEditProductPrice('')
+    setEditProductImage(null)
   }
 
   async function saveProductEdit(id: number) {
@@ -251,6 +258,7 @@ export default function CollectionPage({ onLogout }: Props) {
         description: trimmedDesc,
         price: parsedPrice,
         collection_id: collectionId,
+        image: editProductImage,
       })
       cancelEditProduct()
       await load()
@@ -452,6 +460,18 @@ export default function CollectionPage({ onLogout }: Props) {
                   />
                 </div>
 
+                <div className="md:col-span-3">
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="product-image">Imagem (opcional)</label>
+                  <input
+                    id="product-image"
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => setImage(e.target.files?.[0] ?? null)}
+                    className="w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                    disabled={isSaving}
+                  />
+                </div>
+
                 <div className="md:col-span-3 flex items-center justify-between gap-3">
                   <div className="text-sm">
                     {saveError && <span className="text-red-600">{saveError}</span>}
@@ -502,9 +522,26 @@ export default function CollectionPage({ onLogout }: Props) {
                                 disabled={isUpdatingProduct}
                                 aria-label="Descrição do produto"
                               />
+                              <div className="mt-2">
+                                <label className="block text-xs font-medium text-gray-700 mb-1">Alterar imagem</label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => setEditProductImage(e.target.files?.[0] ?? null)}
+                                  className="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-2 file:rounded file:border-0 file:text-xs file:font-semibold file:bg-orange-50 file:text-orange-700 hover:file:bg-orange-100"
+                                  disabled={isUpdatingProduct}
+                                />
+                              </div>
                             </>
                           ) : (
                             <>
+                              {p.image_url && (
+                                <img
+                                  src={joinUrl(API_BASE_URL, p.image_url)}
+                                  alt={p.name}
+                                  className="w-full h-48 object-cover rounded-lg mb-3"
+                                />
+                              )}
                               <h3 className="font-semibold text-gray-900">{p.name}</h3>
                               <p className="text-sm text-gray-500 mt-1 line-clamp-2">{p.description}</p>
                             </>

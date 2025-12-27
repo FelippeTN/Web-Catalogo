@@ -53,7 +53,16 @@ export class FetchHttpClient implements HttpClient {
     }
 
     const hasBody = options?.body !== undefined
-    if (hasBody) headers['Content-Type'] = headers['Content-Type'] ?? 'application/json'
+    let body: BodyInit | null | undefined
+
+    if (hasBody) {
+      if (options?.body instanceof FormData) {
+        body = options.body
+      } else {
+        headers['Content-Type'] = headers['Content-Type'] ?? 'application/json'
+        body = JSON.stringify(options?.body)
+      }
+    }
 
     if (options?.auth) {
       const token = this.tokenStore.getToken()
@@ -63,21 +72,21 @@ export class FetchHttpClient implements HttpClient {
     const response = await fetch(url, {
       method,
       headers,
-      body: hasBody ? JSON.stringify(options?.body) : undefined,
+      body,
     })
 
     const contentType = response.headers.get('content-type') ?? ''
     const isJson = contentType.includes('application/json')
 
-    const body = isJson ? await response.json().catch(() => null) : await response.text().catch(() => null)
+    const responseBody = isJson ? await response.json().catch(() => null) : await response.text().catch(() => null)
 
     if (!response.ok) {
       const message =
-        (body && typeof body === 'object' && 'error' in (body as any) && String((body as any).error)) ||
+        (responseBody && typeof responseBody === 'object' && 'error' in (responseBody as any) && String((responseBody as any).error)) ||
         `Request failed (${response.status})`
-      throw new ApiError(message, response.status, body)
+      throw new ApiError(message, response.status, responseBody)
     }
 
-    return body as TResponse
+    return responseBody as TResponse
   }
 }

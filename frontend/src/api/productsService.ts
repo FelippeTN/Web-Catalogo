@@ -1,13 +1,5 @@
 import type { HttpClient } from './httpClient'
-import type { CreateProductInput, Product } from './types'
-
-
-export type UpdateProductInput = {
-  name?: string
-  description?: string
-  price?: number
-  collection_id?: number | null
-}
+import type { CreateProductInput, Product, UpdateProductInput } from './types'
 
 export interface ProductsService {
   getMine(): Promise<Product[]>
@@ -29,11 +21,31 @@ export class ApiProductsService implements ProductsService {
   }
 
   create(input: CreateProductInput): Promise<Product> {
-    return this.http.request<Product>('POST', '/protected/products', { auth: true, body: input })
+    const formData = new FormData()
+    formData.append('name', input.name)
+    formData.append('description', input.description)
+    formData.append('price', String(input.price))
+    if (input.collection_id) {
+      formData.append('collection_id', String(input.collection_id))
+    }
+    if (input.image) {
+      formData.append('image', input.image)
+    }
+    return this.http.request<Product>('POST', '/protected/products', { auth: true, body: formData })
   }
 
   update(id: number, input: UpdateProductInput): Promise<Product> {
-    return this.http.request<Product>('PUT', `/protected/products/${id}`, { auth: true, body: input })
+    const formData = new FormData()
+    if (input.name !== undefined) formData.append('name', input.name)
+    if (input.description !== undefined) formData.append('description', input.description)
+    if (input.price !== undefined) formData.append('price', String(input.price))
+    if (input.collection_id !== undefined && input.collection_id !== null) {
+      formData.append('collection_id', String(input.collection_id))
+    }
+    if (input.image) {
+      formData.append('image', input.image)
+    }
+    return this.http.request<Product>('PUT', `/protected/products/${id}`, { auth: true, body: formData })
   }
 
   async remove(id: number): Promise<void> {

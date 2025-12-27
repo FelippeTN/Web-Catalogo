@@ -22,18 +22,9 @@ export type Product = {
   name: string
   description: string
   price: number
+  image_url?: string | null
   created_at: string
   updated_at: string
-}
-
-export type CreateCollectionInput = {
-  name: string
-  description?: string
-}
-
-export type UpdateCollectionInput = {
-  name?: string
-  description?: string
 }
 
 export type CreateProductInput = {
@@ -41,6 +32,15 @@ export type CreateProductInput = {
   description: string
   price: number
   collection_id?: number | null
+  image?: File | null
+}
+
+export type UpdateProductInput = {
+  name?: string
+  description?: string
+  price?: number
+  collection_id?: number | null
+  image?: File | null
 }
 
 export type ShareCollectionResponse = {
