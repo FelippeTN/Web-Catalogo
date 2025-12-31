@@ -197,10 +197,52 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
           </motion.div>
 
             <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" variants={staggerContainer} initial="hidden" animate="show">
+
+
+              {products.map((p) => (
+                <motion.div key={p.id} variants={staggerItem}>
+                  <Card variant="bordered" animate={false}>
+                    {editingProductId === p.id ? (
+                      <div className="space-y-3">
+                        <Input placeholder="Nome" value={editProductName} onChange={(e) => setEditProductName(e.target.value)} />
+                        <Input placeholder="Descrição" value={editProductDescription} onChange={(e) => setEditProductDescription(e.target.value)} />
+                        <Input placeholder="Preço" value={editProductPrice} onChange={(e) => setEditProductPrice(e.target.value)} />
+                        <label className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer">
+                          <ImageIcon className="w-4 h-4 text-gray-500" /><span className="text-sm text-gray-600">{editProductImage ? editProductImage.name : 'Alterar imagem'}</span>
+                          <input type="file" accept="image/*" onChange={(e) => setEditProductImage(e.target.files?.[0] ?? null)} className="hidden" />
+                        </label>
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={() => void saveProductEdit(p.id)} isLoading={isUpdatingProduct}><Save className="w-4 h-4 mr-1" />Salvar</Button>
+                          <Button variant="ghost" size="sm" onClick={cancelEditProduct}>Cancelar</Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <>
+                        {p.image_url ? (
+                          <motion.img src={joinUrl(API_BASE_URL, p.image_url)} alt={p.name} className="w-full h-40 object-cover rounded-lg mb-3" whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }} />
+                        ) : (
+                          <div className="w-full h-40 bg-gray-100 rounded-lg mb-3 flex items-center justify-center"><ImageIcon className="w-10 h-10 text-gray-300" /></div>
+                        )}
+                        <div className="flex justify-between items-start mb-2">
+                          <h3 className="font-medium text-gray-900">{p.name}</h3>
+                          <span className="font-semibold text-blue-600">{formatPrice(p.price)}</span>
+                        </div>
+                        <p className="text-sm text-gray-500 line-clamp-2 mb-4">{p.description}</p>
+                        <div className="flex gap-2">
+                          <Button variant="ghost" size="sm" onClick={() => startEditProduct(p)} className="flex-1"><Pencil className="w-4 h-4 mr-1" />Editar</Button>
+                          <Button variant="danger" size="sm" onClick={() => void deleteProduct(p.id)}><Trash2 className="w-4 h-4" /></Button>
+                        </div>
+                      </>
+                    )}
+                  </Card>
+                </motion.div>
+              ))}
+
+
               {/* Add Product Card */}
               <motion.div variants={staggerItem} className="h-full">
                 <Card 
-                  className={`h-full flex flex-col justify-center relative ${!showCreateForm ? 'aspect-square items-center cursor-pointer hover:bg-gray-50 border-dashed border-2' : ''}`}
+                  className={`h-full flex flex-col justify-center relative ${!showCreateForm ? 'min-h-[300px] items-center cursor-pointer hover:bg-gray-50 border-dashed border-2' : ''}`}
                   onClick={!showCreateForm ? () => setShowCreateForm(true) : undefined}
                   animate={false}
                 >
@@ -241,45 +283,6 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
                   )}
                 </Card>
               </motion.div>
-
-              {products.map((p) => (
-                <motion.div key={p.id} variants={staggerItem}>
-                  <Card variant="bordered" animate={false}>
-                    {editingProductId === p.id ? (
-                      <div className="space-y-3">
-                        <Input placeholder="Nome" value={editProductName} onChange={(e) => setEditProductName(e.target.value)} />
-                        <Input placeholder="Descrição" value={editProductDescription} onChange={(e) => setEditProductDescription(e.target.value)} />
-                        <Input placeholder="Preço" value={editProductPrice} onChange={(e) => setEditProductPrice(e.target.value)} />
-                        <label className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer">
-                          <ImageIcon className="w-4 h-4 text-gray-500" /><span className="text-sm text-gray-600">{editProductImage ? editProductImage.name : 'Alterar imagem'}</span>
-                          <input type="file" accept="image/*" onChange={(e) => setEditProductImage(e.target.files?.[0] ?? null)} className="hidden" />
-                        </label>
-                        <div className="flex gap-2">
-                          <Button size="sm" onClick={() => void saveProductEdit(p.id)} isLoading={isUpdatingProduct}><Save className="w-4 h-4 mr-1" />Salvar</Button>
-                          <Button variant="ghost" size="sm" onClick={cancelEditProduct}>Cancelar</Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        {p.image_url ? (
-                          <motion.img src={joinUrl(API_BASE_URL, p.image_url)} alt={p.name} className="w-full h-40 object-cover rounded-lg mb-3" whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }} />
-                        ) : (
-                          <div className="w-full h-40 bg-gray-100 rounded-lg mb-3 flex items-center justify-center"><ImageIcon className="w-10 h-10 text-gray-300" /></div>
-                        )}
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-medium text-gray-900">{p.name}</h3>
-                          <span className="font-semibold text-blue-600">{formatPrice(p.price)}</span>
-                        </div>
-                        <p className="text-sm text-gray-500 line-clamp-2 mb-4">{p.description}</p>
-                        <div className="flex gap-2">
-                          <Button variant="ghost" size="sm" onClick={() => startEditProduct(p)} className="flex-1"><Pencil className="w-4 h-4 mr-1" />Editar</Button>
-                          <Button variant="danger" size="sm" onClick={() => void deleteProduct(p.id)}><Trash2 className="w-4 h-4" /></Button>
-                        </div>
-                      </>
-                    )}
-                  </Card>
-                </motion.div>
-              ))}
             </motion.div>
         </>
       )}

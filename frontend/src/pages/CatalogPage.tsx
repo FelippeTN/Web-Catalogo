@@ -196,11 +196,69 @@ export default function CatalogPage({ onLogout }: CatalogPageProps) {
           initial="hidden"
           animate="show"
         >
+
+
+          {catalogs.map((c) => (
+            <motion.div key={c.id} variants={staggerItem} className="h-full">
+              <Card variant="bordered" animate={false} className="h-full flex flex-col min-h-[220px]">
+                {editingId === c.id ? (
+                  <div className="space-y-3 flex-1">
+                    <Input
+                      placeholder="Nome"
+                      value={editName}
+                      onChange={(e) => setEditName(e.target.value)}
+                      disabled={isUpdating}
+                    />
+                    <Input
+                      placeholder="Descrição"
+                      value={editDescription}
+                      onChange={(e) => setEditDescription(e.target.value)}
+                      disabled={isUpdating}
+                    />
+                    {updateError && <p className="text-sm text-red-600">{updateError}</p>}
+                    <div className="flex gap-2">
+                      <Button size="sm" onClick={() => void saveEdit(c.id)} isLoading={isUpdating}>
+                        Salvar
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={cancelEdit}>
+                        Cancelar
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex flex-col flex-1 h-full">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-medium text-gray-900">{c.name}</h3>
+                      <Badge>{c.items} itens</Badge>
+                    </div>
+                    <p className="text-sm text-gray-500 line-clamp-2 mb-3 min-h-[40px] flex-1">{c.description}</p>
+                    <p className="text-xs text-gray-400 mb-4">{c.updatedAtLabel}</p>
+
+                    <div className="flex gap-2 mt-auto">
+                      <Button size="sm" onClick={() => navigate(`/catalogos/${c.id}`)} className="flex-1">
+                        <ExternalLink className="w-4 h-4 mr-1" /> Abrir
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => void handleShare(c.id)}>
+                        <Share2 className="w-4 h-4" />
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => startEdit(c)}>
+                        <Pencil className="w-4 h-4" />
+                      </Button>
+                      <Button variant="danger" size="sm" onClick={() => void handleDelete(c.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </Card>
+            </motion.div>
+          ))}
+
           {/* Create New Card */}
           {canCreate && (
             <motion.div variants={staggerItem} className="h-full">
               <Card 
-                className={`h-full flex flex-col justify-center relative ${!showCreateForm ? 'aspect-square items-center cursor-pointer hover:bg-gray-50 border-dashed border-2' : ''}`}
+                className={`h-full flex flex-col justify-center relative ${!showCreateForm ? 'min-h-[220px] items-center cursor-pointer hover:bg-gray-50 border-dashed border-2' : ''}`}
                 onClick={!showCreateForm ? () => setShowCreateForm(true) : undefined}
                 animate={false}
               >
@@ -249,62 +307,6 @@ export default function CatalogPage({ onLogout }: CatalogPageProps) {
               </Card>
             </motion.div>
           )}
-
-          {catalogs.map((c) => (
-            <motion.div key={c.id} variants={staggerItem}>
-              <Card variant="bordered" animate={false}>
-                {editingId === c.id ? (
-                  <div className="space-y-3">
-                    <Input
-                      placeholder="Nome"
-                      value={editName}
-                      onChange={(e) => setEditName(e.target.value)}
-                      disabled={isUpdating}
-                    />
-                    <Input
-                      placeholder="Descrição"
-                      value={editDescription}
-                      onChange={(e) => setEditDescription(e.target.value)}
-                      disabled={isUpdating}
-                    />
-                    {updateError && <p className="text-sm text-red-600">{updateError}</p>}
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => void saveEdit(c.id)} isLoading={isUpdating}>
-                        Salvar
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={cancelEdit}>
-                        Cancelar
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <>
-                    <div className="flex items-start justify-between mb-2">
-                      <h3 className="font-medium text-gray-900">{c.name}</h3>
-                      <Badge>{c.items} itens</Badge>
-                    </div>
-                    <p className="text-sm text-gray-500 line-clamp-2 mb-3 min-h-[40px]">{c.description}</p>
-                    <p className="text-xs text-gray-400 mb-4">{c.updatedAtLabel}</p>
-
-                    <div className="flex gap-2">
-                      <Button size="sm" onClick={() => navigate(`/catalogos/${c.id}`)} className="flex-1">
-                        <ExternalLink className="w-4 h-4 mr-1" /> Abrir
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => void handleShare(c.id)}>
-                        <Share2 className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => startEdit(c)}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button variant="danger" size="sm" onClick={() => void handleDelete(c.id)}>
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </>
-                )}
-              </Card>
-            </motion.div>
-          ))}
         </motion.div>
       )}
     </PageLayout>
