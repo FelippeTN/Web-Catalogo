@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Plus, Share2, Pencil, Trash2, ExternalLink, Package } from 'lucide-react'
+import { Plus, Share2, Pencil, Trash2, ExternalLink, X } from 'lucide-react'
 
 import { collectionsService, isUnauthorized } from '../api'
 import { useCatalogs, type CatalogCard } from '../hooks/useCatalogs'
@@ -20,6 +20,7 @@ export default function CatalogPage({ onLogout }: CatalogPageProps) {
   const [description, setDescription] = useState('')
   const [isCreating, setIsCreating] = useState(false)
   const [createError, setCreateError] = useState<string | null>(null)
+  const [showCreateForm, setShowCreateForm] = useState(false)
 
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
@@ -62,6 +63,7 @@ export default function CatalogPage({ onLogout }: CatalogPageProps) {
       setName('')
       setDescription('')
       await reload()
+      setShowCreateForm(false)
     } catch (err) {
       if (isUnauthorized(err)) {
         onLogout()
@@ -156,40 +158,7 @@ export default function CatalogPage({ onLogout }: CatalogPageProps) {
         <p className="text-gray-600 mt-1">Crie e gerencie seus catálogos de produtos</p>
       </motion.div>
 
-      {/* Create form */}
-      <Card className="mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-            <Plus className="w-5 h-5 text-blue-600" />
-          </div>
-          <div>
-            <h2 className="font-medium text-gray-900">Nova vitrine</h2>
-            <p className="text-sm text-gray-500">{catalogs.length}/5 vitrines criadas</p>
-          </div>
-        </div>
 
-        <form className="flex flex-col md:flex-row gap-3" onSubmit={handleCreate}>
-          <Input
-            placeholder="Nome da vitrine"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            disabled={isLoading || isCreating || !canCreate}
-            className="flex-1"
-          />
-          <Input
-            placeholder="Descrição (opcional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={isLoading || isCreating || !canCreate}
-            className="flex-1"
-          />
-          <Button type="submit" disabled={isLoading || isCreating || !canCreate} isLoading={isCreating}>
-            Criar vitrine
-          </Button>
-        </form>
-
-        {createError && <p className="text-sm text-red-600 mt-3">{createError}</p>}
-      </Card>
 
       {/* Loading */}
       {isLoading && (
@@ -219,29 +188,68 @@ export default function CatalogPage({ onLogout }: CatalogPageProps) {
       )}
 
       {/* Empty */}
-      {!isLoading && !errorMessage && catalogs.length === 0 && (
-        <motion.div 
-          className="text-center py-16"
-          initial={{ opacity: 0, scale: 0.95 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ type: 'spring', stiffness: 300, damping: 25 }}
-        >
-          <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <Package className="w-8 h-8 text-gray-400" />
-          </div>
-          <h3 className="font-medium text-gray-900 mb-1">Nenhuma vitrine</h3>
-          <p className="text-gray-500 text-sm">Crie sua primeira vitrine acima</p>
-        </motion.div>
-      )}
-
-      {/* Grid with stagger */}
-      {!isLoading && catalogs.length > 0 && (
+      {/* Grid with Create Card and Catalogs */}
+      {!isLoading && (
         <motion.div 
           className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
           variants={staggerContainer}
           initial="hidden"
           animate="show"
         >
+          {/* Create New Card */}
+          {canCreate && (
+            <motion.div variants={staggerItem} className="h-full">
+              <Card 
+                className={`h-full flex flex-col justify-center relative ${!showCreateForm ? 'aspect-square items-center cursor-pointer hover:bg-gray-50 border-dashed border-2' : ''}`}
+                onClick={!showCreateForm ? () => setShowCreateForm(true) : undefined}
+                animate={false}
+              >
+                {!showCreateForm ? (
+                  <div className="flex flex-col items-center gap-2 text-gray-500">
+                    <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
+                      <Plus className="w-6 h-6 text-blue-600" />
+                    </div>
+                    <span className="font-medium">Nova Vitrine</span>
+                  </div>
+                ) : (
+                  <div className="w-full">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setShowCreateForm(false); }}
+                      className="absolute top-3 right-3 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    
+                    <div className="mb-4">
+                      <h2 className="font-medium text-gray-900">Nova vitrine</h2>
+                      <p className="text-sm text-gray-500">{catalogs.length}/5 criadas</p>
+                    </div>
+
+                    <form className="flex flex-col gap-3" onSubmit={handleCreate}>
+                      <Input
+                        placeholder="Nome da vitrine"
+                        value={name}
+                        onChange={(e) => setName(e.target.value)}
+                        disabled={isLoading || isCreating}
+                        autoFocus
+                      />
+                      <Input
+                        placeholder="Descrição (opcional)"
+                        value={description}
+                        onChange={(e) => setDescription(e.target.value)}
+                        disabled={isLoading || isCreating}
+                      />
+                      <Button type="submit" disabled={isLoading || isCreating} isLoading={isCreating}>
+                        Criar vitrine
+                      </Button>
+                    </form>
+                    {createError && <p className="text-sm text-red-600 mt-2">{createError}</p>}
+                  </div>
+                )}
+              </Card>
+            </motion.div>
+          )}
+
           {catalogs.map((c) => (
             <motion.div key={c.id} variants={staggerItem}>
               <Card variant="bordered" animate={false}>

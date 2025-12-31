@@ -41,7 +41,9 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
   const [editProductDescription, setEditProductDescription] = useState('')
   const [editProductPrice, setEditProductPrice] = useState('')
   const [editProductImage, setEditProductImage] = useState<File | null>(null)
+
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false)
+  const [showCreateForm, setShowCreateForm] = useState(false)
 
   async function load() {
     if (!Number.isFinite(collectionId) || collectionId <= 0) {
@@ -92,7 +94,9 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
       setIsSaving(true)
       await productsService.create({ name: trimmedName, description: trimmedDesc, price: parsedPrice, collection_id: collectionId, image })
       setName(''); setDescription(''); setPrice(''); setImage(null)
+
       await load()
+      setShowCreateForm(false)
     } catch (err) {
       if (isUnauthorized(err)) { onLogout(); navigate('/login', { replace: true }); return }
       setSaveError(err instanceof Error ? err.message : 'Erro')
@@ -185,39 +189,59 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
             )}
           </Card>
 
-          {/* Add product */}
-          <Card className="mb-6">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center"><Plus className="w-5 h-5 text-blue-600" /></div>
-              <h2 className="font-medium text-gray-900">Adicionar produto</h2>
-            </div>
 
-            <form className="flex flex-col md:flex-row gap-3" onSubmit={handleCreateProduct}>
-              <Input placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} disabled={isSaving} className="flex-1" />
-              <Input placeholder="Preço" value={price} onChange={(e) => setPrice(e.target.value)} disabled={isSaving} className="w-28" />
-              <Input placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} className="flex-1" />
-              <label className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
-                <ImageIcon className="w-4 h-4 text-gray-500" />
-                <span className="text-sm text-gray-600 truncate max-w-[80px]">{image ? image.name : 'Imagem'}</span>
-                <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)} className="hidden" />
-              </label>
-              <Button type="submit" isLoading={isSaving}><Plus className="w-4 h-4" /></Button>
-            </form>
-            {saveError && <p className="text-sm text-red-600 mt-3">{saveError}</p>}
-          </Card>
 
           {/* Products */}
           <motion.div className="mb-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
             <h2 className="font-medium text-gray-900">Produtos ({products.length})</h2>
           </motion.div>
 
-          {products.length === 0 ? (
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="text-center py-12">
-              <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mx-auto mb-4"><ImageIcon className="w-8 h-8 text-gray-400" /></div>
-              <p className="text-gray-500">Nenhum produto. Adicione acima!</p>
-            </motion.div>
-          ) : (
             <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" variants={staggerContainer} initial="hidden" animate="show">
+              {/* Add Product Card */}
+              <motion.div variants={staggerItem} className="h-full">
+                <Card 
+                  className={`h-full flex flex-col justify-center relative ${!showCreateForm ? 'aspect-square items-center cursor-pointer hover:bg-gray-50 border-dashed border-2' : ''}`}
+                  onClick={!showCreateForm ? () => setShowCreateForm(true) : undefined}
+                  animate={false}
+                >
+                  {!showCreateForm ? (
+                    <div className="flex flex-col items-center gap-2 text-gray-500">
+                      <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
+                        <Plus className="w-6 h-6 text-blue-600" />
+                      </div>
+                      <span className="font-medium">Adicionar produto</span>
+                    </div>
+                  ) : (
+                    <div className="w-full">
+                      <button
+                        onClick={(e) => { e.stopPropagation(); setShowCreateForm(false); }}
+                        className="absolute top-3 right-3 p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100"
+                        type="button"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                      
+                      <h3 className="font-medium text-gray-900 mb-4">Novo Produto</h3>
+
+                      <form className="flex flex-col gap-3" onSubmit={handleCreateProduct}>
+                        <Input placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} disabled={isSaving} autoFocus />
+                        <Input placeholder="Preço" value={price} onChange={(e) => setPrice(e.target.value)} disabled={isSaving} />
+                        <Input placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} />
+                        <label className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
+                          <ImageIcon className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600 truncate max-w-[80px]">{image ? image.name : 'Imagem'}</span>
+                          <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)} className="hidden" />
+                        </label>
+                        <Button type="submit" isLoading={isSaving} className="w-full">
+                          Adicionar
+                        </Button>
+                      </form>
+                      {saveError && <p className="text-sm text-red-600 mt-2">{saveError}</p>}
+                    </div>
+                  )}
+                </Card>
+              </motion.div>
+
               {products.map((p) => (
                 <motion.div key={p.id} variants={staggerItem}>
                   <Card variant="bordered" animate={false}>
@@ -257,7 +281,6 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
                 </motion.div>
               ))}
             </motion.div>
-          )}
         </>
       )}
     </PageLayout>
