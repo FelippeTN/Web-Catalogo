@@ -2,7 +2,7 @@ import { type ButtonHTMLAttributes, forwardRef } from 'react'
 import { motion } from 'framer-motion'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
-export type ButtonSize = 'sm' | 'md' | 'lg'
+export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: ButtonVariant
@@ -21,6 +21,7 @@ const sizeClasses: Record<ButtonSize, string> = {
   sm: 'px-3 py-1.5 text-sm',
   md: 'px-4 py-2 text-sm',
   lg: 'px-5 py-2.5 text-base',
+  icon: 'h-9 w-9 p-0 flex items-center justify-center',
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(

@@ -23,28 +23,28 @@ export default function WelcomePage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <motion.header 
-        className="border-b border-gray-100"
+        className="sticky top-0 z-50 w-full border-b border-gray-100/80 bg-white/80 backdrop-blur-md"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
-        <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+        <div className="max-w-6xl mx-auto px-6 h-16 flex justify-between items-center">
           <div className="flex items-center gap-2">
             <motion.div 
-              className="w-9 h-9 rounded-lg bg-blue-600 flex items-center justify-center"
+              className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center shadow-sm shadow-blue-200"
               whileHover={{ scale: 1.05, rotate: 5 }}
               transition={{ type: 'spring', stiffness: 400, damping: 17 }}
             >
-              <Store className="w-5 h-5 text-white" />
+              <Store className="w-4 h-4 text-white" />
             </motion.div>
-            <span className="text-lg font-semibold text-gray-900">Vitrine Digital</span>
+            <span className="text-lg font-semibold text-gray-900 tracking-tight">Vitrine Digital</span>
           </div>
 
           <div className="flex items-center gap-3">
-            <Button variant="ghost" onClick={() => navigate('/login')}>
+            <Button variant="ghost" onClick={() => navigate('/login')} className="font-medium">
               Entrar
             </Button>
-            <Button onClick={() => navigate('/registro')}>
+            <Button onClick={() => navigate('/registro')} className="shadow-lg shadow-blue-200/50">
               Criar conta grátis
             </Button>
           </div>
