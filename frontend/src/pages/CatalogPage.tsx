@@ -3,10 +3,10 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, Share2, Pencil, Trash2, ExternalLink, X } from 'lucide-react'
 
-import { collectionsService, isUnauthorized } from '../api'
-import { useCatalogs, type CatalogCard } from '../hooks/useCatalogs'
-import { PageLayout, staggerContainer, staggerItem } from '../components/layout'
-import { Button, Card, Badge, Input } from '../components/ui'
+import { collectionsService, isUnauthorized } from '@/api'
+import { useCatalogs, type CatalogCard } from '@/hooks/useCatalogs'
+import { PageLayout, staggerContainer, staggerItem } from '@/components/layout'
+import { Button, Card, Badge, Input } from '@/components/ui'
 
 interface CatalogPageProps {
   onLogout: () => void

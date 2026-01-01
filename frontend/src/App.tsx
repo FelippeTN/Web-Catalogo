@@ -1,12 +1,12 @@
 import { useMemo, useState } from 'react'
 import { Navigate, Route, Routes } from 'react-router-dom'
 
-import CatalogPage from './pages/CatalogPage'
-import CollectionPage from './pages/CollectionPage'
-import LoginPage from './pages/LoginPage'
-import PublicCatalogPage from './pages/PublicCatalogPage'
-import RegisterPage from './pages/RegisterPage'
-import WelcomePage from './pages/WelcomePage'
+import CatalogPage from '@/pages/CatalogPage'
+import CollectionPage from '@/pages/CollectionPage'
+import LoginPage from '@/pages/LoginPage'
+import PublicCatalogPage from '@/pages/PublicCatalogPage'
+import RegisterPage from '@/pages/RegisterPage'
+import WelcomePage from '@/pages/WelcomePage'
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false)

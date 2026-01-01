@@ -1,7 +1,7 @@
-import { FetchHttpClient } from './httpClient'
-import { LocalStorageTokenStore } from './tokenStore'
-import { ApiCollectionsService } from './collectionsService'
-import { ApiProductsService } from './productsService'
+import { FetchHttpClient } from '@/api/httpClient'
+import { LocalStorageTokenStore } from '@/api/tokenStore'
+import { ApiCollectionsService } from '@/api/collectionsService'
+import { ApiProductsService } from '@/api/productsService'
 
 const http = new FetchHttpClient(new LocalStorageTokenStore('token'))
 

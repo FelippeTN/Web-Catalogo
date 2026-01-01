@@ -1,4 +1,4 @@
-import { Button } from '../ui'
+import { Button } from '@/components/ui'
 import { Store } from 'lucide-react'
 
 export interface HeaderProps {

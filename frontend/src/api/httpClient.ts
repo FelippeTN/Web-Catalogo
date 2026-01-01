@@ -1,6 +1,6 @@
-import { API_BASE_URL, joinUrl } from './config'
-import { ApiError } from './errors'
-import type { TokenStore } from './tokenStore'
+import { API_BASE_URL, joinUrl } from '@/api/config'
+import { ApiError } from '@/api/errors'
+import type { TokenStore } from '@/api/tokenStore'
 
 export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 

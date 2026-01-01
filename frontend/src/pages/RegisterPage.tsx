@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import AuthLayout from '../components/AuthLayout'
-import { Button, Input } from '../components/ui'
+import AuthLayout from '@/components/AuthLayout'
+import { Button, Input } from '@/components/ui'
 
 interface RegisterPageProps {
   onAuthenticated: () => void

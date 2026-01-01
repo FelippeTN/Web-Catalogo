@@ -1,5 +1,5 @@
-import type { HttpClient } from './httpClient'
-import type { CreateProductInput, Product, UpdateProductInput } from './types'
+import type { HttpClient } from '@/api/httpClient'
+import type { CreateProductInput, Product, UpdateProductInput } from '@/api/types'
 
 export interface ProductsService {
   getMine(): Promise<Product[]>

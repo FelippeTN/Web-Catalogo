@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Store, Zap, Share2, ArrowRight } from 'lucide-react'
-import { Button } from '../components/ui'
+import { Button } from '@/components/ui'
 
 const fadeUp = {
   initial: { opacity: 0, y: 20 },

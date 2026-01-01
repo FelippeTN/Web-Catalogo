@@ -1,7 +1,7 @@
 import { type ReactNode } from 'react'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
-import { Header, type HeaderProps } from './Header'
-import { Footer } from './Footer'
+import { Header, type HeaderProps } from '@/components/layout/Header'
+import { Footer } from '@/components/layout/Footer'
 
 export interface PageLayoutProps extends HeaderProps {
   children: ReactNode

@@ -3,11 +3,11 @@ import { useParams } from 'react-router-dom'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
 import { ShoppingCart, Plus, Minus, ImageIcon, Store } from 'lucide-react'
 
-import { collectionsService } from '../api'
-import { API_BASE_URL, joinUrl } from '../api/config'
-import type { Product } from '../api'
-import { Button, Card } from '../components/ui'
-import { formatPrice } from '../utils/format'
+import { collectionsService } from '@/api'
+import { API_BASE_URL, joinUrl } from '@/api/config'
+import type { Product } from '@/api'
+import { Button, Card } from '@/components/ui'
+import { formatPrice } from '@/utils/format'
 
 type CartState = Record<string, number>
 

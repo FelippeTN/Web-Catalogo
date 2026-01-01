@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { collectionsService, productsService } from '../api'
-import type { Collection, Product } from '../api'
+import { collectionsService, productsService } from '@/api'
+import type { Collection, Product } from '@/api'
 
 export type CatalogCard = {
   id: string

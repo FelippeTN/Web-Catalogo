@@ -1,5 +1,5 @@
-import type { HttpClient } from './httpClient'
-import type { Collection, CreateCollectionInput, PublicCatalogResponse, ShareCollectionResponse, UpdateCollectionInput } from './types'
+import type { HttpClient } from '@/api/httpClient'
+import type { Collection, CreateCollectionInput, PublicCatalogResponse, ShareCollectionResponse, UpdateCollectionInput } from '@/api/types'
 
 export interface CollectionsService {
   getMine(): Promise<Collection[]>

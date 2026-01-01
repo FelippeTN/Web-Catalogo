@@ -3,12 +3,12 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, ImageIcon, Trash2, Pencil, Save, X, Share2 } from 'lucide-react'
 
-import { collectionsService, isUnauthorized, productsService } from '../api'
-import { API_BASE_URL, joinUrl } from '../api/config'
-import type { Collection, Product } from '../api'
-import { PageLayout, staggerContainer, staggerItem } from '../components/layout'
-import { Button, Card, Input } from '../components/ui'
-import { formatPrice } from '../utils/format'
+import { collectionsService, isUnauthorized, productsService } from '@/api'
+import { API_BASE_URL, joinUrl } from '@/api/config'
+import type { Collection, Product } from '@/api'
+import { PageLayout, staggerContainer, staggerItem } from '@/components/layout'
+import { Button, Card, Input } from '@/components/ui'
+import { formatPrice } from '@/utils/format'
 
 interface CollectionPageProps {
   onLogout: () => void
