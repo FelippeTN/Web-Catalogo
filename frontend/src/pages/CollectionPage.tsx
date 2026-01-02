@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, ImageIcon, Trash2, Pencil, Save, X, Share2 } from 'lucide-react'
 
 import { collectionsService, isUnauthorized, productsService } from '@/api'
@@ -44,6 +44,7 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
 
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
+  const [previewProduct, setPreviewProduct] = useState<Product | null>(null)
 
   async function load() {
     if (!Number.isFinite(collectionId) || collectionId <= 0) {
@@ -219,7 +220,14 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
                     ) : (
                       <>
                         {p.image_url ? (
-                          <motion.img src={joinUrl(API_BASE_URL, p.image_url)} alt={p.name} className="w-full h-40 object-cover rounded-lg mb-3" whileHover={{ scale: 1.02 }} transition={{ type: 'spring', stiffness: 300 }} />
+                          <motion.img
+                            src={joinUrl(API_BASE_URL, p.image_url)}
+                            alt={p.name}
+                            className="w-full h-40 object-cover rounded-lg mb-3 cursor-zoom-in"
+                            whileHover={{ scale: 1.02 }}
+                            transition={{ type: 'spring', stiffness: 300 }}
+                            onClick={() => setPreviewProduct(p)}
+                          />
                         ) : (
                           <div className="w-full h-40 bg-gray-100 rounded-lg mb-3 flex items-center justify-center"><ImageIcon className="w-10 h-10 text-gray-300" /></div>
                         )}
@@ -286,6 +294,59 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
             </motion.div>
         </>
       )}
+
+      <AnimatePresence>
+        {previewProduct && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setPreviewProduct(null)}
+          >
+            <motion.div
+              className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden shadow-2xl"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="absolute top-4 right-4 z-10 h-9 w-9 rounded-full bg-white/90 shadow flex items-center justify-center hover:bg-white"
+                onClick={() => setPreviewProduct(null)}
+                aria-label="Fechar visualização do produto"
+              >
+                <X className="w-4 h-4 text-gray-700" />
+              </button>
+
+              {previewProduct.image_url ? (
+                <img
+                  src={joinUrl(API_BASE_URL, previewProduct.image_url)}
+                  alt={previewProduct.name}
+                  className="w-full max-h-[60vh] object-contain bg-gray-50"
+                />
+              ) : (
+                <div className="w-full max-h-[60vh] bg-gray-100 flex items-center justify-center">
+                  <ImageIcon className="w-12 h-12 text-gray-300" />
+                </div>
+              )}
+
+              <div className="p-6 md:p-8 space-y-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Visualização</p>
+                <div className="flex items-start justify-between gap-4">
+                  <h3 className="text-2xl font-bold text-gray-900 leading-tight">{previewProduct.name}</h3>
+                  <span className="text-2xl font-extrabold text-blue-700 whitespace-nowrap">{formatPrice(previewProduct.price)}</span>
+                </div>
+                <p className="text-gray-600 text-base leading-relaxed">{previewProduct.description}</p>
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button onClick={() => setPreviewProduct(null)}>Fechar</Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </PageLayout>
   )
 }

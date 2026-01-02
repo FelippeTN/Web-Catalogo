@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
-import { ShoppingCart, Plus, Minus, ImageIcon, Store } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, ImageIcon, Store, X } from 'lucide-react'
 
 import { collectionsService } from '@/api'
 import { API_BASE_URL, joinUrl } from '@/api/config'
@@ -30,6 +30,7 @@ export default function PublicCatalogPage() {
   const [title, setTitle] = useState('Vitrine')
   const [products, setProducts] = useState<Product[]>([])
   const [cart, setCart] = useState<CartState>({})
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
 
   useEffect(() => {
     if (!token) return
@@ -160,12 +161,17 @@ export default function PublicCatalogPage() {
                 >
                   {products.map((p) => (
                     <motion.div key={p.id} variants={staggerItem}>
-                      <Card variant="bordered" animate={false}>
+                      <Card
+                        variant="bordered"
+                        animate={false}
+                        className="group cursor-pointer"
+                        onClick={() => setSelectedProduct(p)}
+                      >
                         {p.image_url ? (
                           <motion.img 
                             src={joinUrl(API_BASE_URL, p.image_url)} 
                             alt={p.name} 
-                            className="w-full h-44 object-cover rounded-lg mb-3"
+                            className="w-full h-44 object-cover rounded-lg mb-3 transition-all group-hover:scale-[1.02] group-hover:shadow-lg"
                             whileHover={{ scale: 1.03 }}
                             transition={{ type: 'spring', stiffness: 300 }}
                           />
@@ -180,7 +186,10 @@ export default function PublicCatalogPage() {
 
                         <div className="flex items-center justify-between">
                           <span className="text-lg font-bold text-blue-600">{formatPrice(p.price)}</span>
-                          <Button size="sm" onClick={() => addToCart(p.id)}>
+                          <Button
+                            size="sm"
+                            onClick={(e) => { e.stopPropagation(); addToCart(p.id) }}
+                          >
                             <Plus className="w-4 h-4 mr-1" /> Adicionar
                           </Button>
                         </div>
@@ -275,6 +284,67 @@ export default function PublicCatalogPage() {
           </div>
         )}
       </main>
+
+      <AnimatePresence>
+        {selectedProduct && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setSelectedProduct(null)}
+          >
+            <motion.div
+              className="relative w-full max-w-4xl bg-white rounded-2xl overflow-hidden shadow-2xl"
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 22 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="absolute top-4 right-4 z-10 h-9 w-9 rounded-full bg-white/90 shadow flex items-center justify-center hover:bg-white"
+                onClick={() => setSelectedProduct(null)}
+                aria-label="Fechar visualização do produto"
+              >
+                <X className="w-4 h-4 text-gray-700" />
+              </button>
+
+              {selectedProduct.image_url ? (
+                <img
+                  src={joinUrl(API_BASE_URL, selectedProduct.image_url)}
+                  alt={selectedProduct.name}
+                  className="w-full max-h-[60vh] object-contain bg-gray-50"
+                />
+              ) : (
+                <div className="w-full max-h-[60vh] bg-gray-100 flex items-center justify-center">
+                  <ImageIcon className="w-12 h-12 text-gray-300" />
+                </div>
+              )}
+
+              <div className="p-6 md:p-8 space-y-3">
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Produto</p>
+                    <h3 className="text-2xl font-bold text-gray-900 leading-tight">{selectedProduct.name}</h3>
+                  </div>
+                  <span className="text-2xl font-extrabold text-blue-700 whitespace-nowrap">{formatPrice(selectedProduct.price)}</span>
+                </div>
+                <p className="text-gray-600 text-base leading-relaxed">{selectedProduct.description}</p>
+
+                <div className="flex flex-wrap gap-3 pt-2">
+                  <Button onClick={() => { addToCart(selectedProduct.id); setSelectedProduct(null) }}>
+                    <ShoppingCart className="w-4 h-4 mr-2" /> Colocar no carrinho
+                  </Button>
+                  <Button variant="secondary" onClick={() => setSelectedProduct(null)}>
+                    Fechar
+                  </Button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <footer className="py-6 text-center text-sm text-gray-500">
         Vitrine Digital • Carrinho salvo na sessão
