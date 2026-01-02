@@ -31,6 +31,7 @@ export default function PublicCatalogPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [cart, setCart] = useState<CartState>({})
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [isCartOpen, setIsCartOpen] = useState(false)
 
   useEffect(() => {
     if (!token) return
@@ -66,7 +67,13 @@ export default function PublicCatalogPage() {
     return () => { mounted = false }
   }, [token])
 
-  function addToCart(id: number) { setCart((prev) => ({ ...prev, [String(id)]: (prev[String(id)] ?? 0) + 1 })) }
+  function addToCart(id: number) {
+    setCart((prev) => {
+      const isFirstItem = Object.keys(prev).length === 0
+      if (isFirstItem) setIsCartOpen(true)
+      return { ...prev, [String(id)]: (prev[String(id)] ?? 0) + 1 }
+    })
+  }
 
   function decrement(id: number) {
     setCart((prev) => {
@@ -112,15 +119,23 @@ export default function PublicCatalogPage() {
             </div>
           </div>
 
-          <motion.div 
-            className="flex items-center gap-2 px-3 py-1.5 bg-blue-50/50 border border-blue-100 rounded-full"
-            animate={{ scale: totalItems > 0 ? [1, 1.05, 1] : 1 }}
-            transition={{ duration: 0.3 }}
-            key={totalItems}
+          <motion.button 
+            className="flex items-center gap-2 px-3 py-1.5 bg-blue-50/50 border border-blue-100 rounded-full cursor-pointer hover:bg-blue-100/50 transition-colors"
+            onClick={() => setIsCartOpen((prev) => !prev)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
             <ShoppingCart className="w-4 h-4 text-blue-600" />
-            <span className="text-sm font-bold text-blue-700">{totalItems}</span>
-          </motion.div>
+            <motion.span 
+              className="text-sm font-bold text-blue-700"
+              key={totalItems}
+              initial={{ scale: 1.2 }}
+              animate={{ scale: 1 }}
+              transition={{ type: 'spring', stiffness: 500, damping: 15 }}
+            >
+              {totalItems}
+            </motion.span>
+          </motion.button>
         </div>
       </motion.header>
 
@@ -139,9 +154,17 @@ export default function PublicCatalogPage() {
         {!isLoading && errorMessage && <div className="text-center py-12 text-red-600">{errorMessage}</div>}
 
         {!isLoading && !errorMessage && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <motion.div 
+            className={`grid grid-cols-1 gap-6 ${isCartOpen ? 'lg:grid-cols-3' : ''}`}
+            layout
+            transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+          >
             {/* Products */}
-            <section className="lg:col-span-2">
+            <motion.section 
+              className={isCartOpen ? 'lg:col-span-2' : ''}
+              layout
+              transition={{ type: 'spring', stiffness: 300, damping: 30 }}
+            >
               <motion.h2 
                 className="font-semibold text-gray-900 mb-4"
                 initial={{ opacity: 0, x: -20 }}
@@ -154,13 +177,15 @@ export default function PublicCatalogPage() {
                 <div className="text-center py-12 text-gray-500">Nenhum produto</div>
               ) : (
                 <motion.div 
-                  className="grid grid-cols-1 md:grid-cols-2 gap-4"
+                  className={`grid grid-cols-1 gap-4 ${isCartOpen ? 'md:grid-cols-2' : 'md:grid-cols-2 lg:grid-cols-3'}`}
                   variants={staggerContainer}
                   initial="hidden"
                   animate="show"
+                  layout
+                  transition={{ type: 'spring', stiffness: 300, damping: 30 }}
                 >
                   {products.map((p) => (
-                    <motion.div key={p.id} variants={staggerItem}>
+                    <motion.div key={p.id} variants={staggerItem} layout>
                       <Card
                         variant="bordered"
                         animate={false}
@@ -198,90 +223,111 @@ export default function PublicCatalogPage() {
                   ))}
                 </motion.div>
               )}
-            </section>
+            </motion.section>
 
             {/* Cart */}
-            <aside className="lg:sticky lg:top-20 h-fit">
-              <Card>
-                <div className="flex items-center gap-3 mb-4">
-                  <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
-                    <ShoppingCart className="w-5 h-5 text-blue-600" />
-                  </div>
-                  <h2 className="font-medium text-gray-900">Carrinho</h2>
-                </div>
+            <AnimatePresence mode="popLayout">
+              {isCartOpen && (
+                <motion.aside 
+                  className="lg:sticky lg:top-20 h-fit"
+                  layout
+                  initial={{ opacity: 0, scale: 0.9, x: 30 }}
+                  animate={{ opacity: 1, scale: 1, x: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, x: 30 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 30 }}
+                >
+                  <Card>
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-lg bg-blue-50 flex items-center justify-center">
+                          <ShoppingCart className="w-5 h-5 text-blue-600" />
+                        </div>
+                        <h2 className="font-medium text-gray-900">Carrinho</h2>
+                      </div>
+                      <button
+                        className="p-1.5 rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition-colors"
+                        onClick={() => setIsCartOpen(false)}
+                        aria-label="Fechar carrinho"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
 
-                {cartItems.length === 0 ? (
-                  <p className="text-gray-500 text-sm py-6 text-center">Carrinho vazio</p>
-                ) : (
-                  <div className="space-y-3">
-                    <AnimatePresence mode="popLayout">
-                      {cartItems.map(({ product, qty }) => (
-                        <motion.div 
-                          key={product.id} 
-                          className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: 20 }}
-                          layout
-                        >
-                          {product.image_url ? (
-                            <img src={joinUrl(API_BASE_URL, product.image_url)} alt="" className="w-12 h-12 rounded-lg object-cover" />
-                          ) : (
-                            <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                              <ImageIcon className="w-5 h-5 text-gray-400" />
-                            </div>
-                          )}
-                          <div className="flex-1 min-w-0">
-                            <p className="font-medium text-gray-900 text-sm truncate">{product.name}</p>
-                            <p className="text-xs text-gray-500">{formatPrice(product.price)}</p>
-                          </div>
-                          <div className="flex items-center gap-1">
-                            <motion.button 
-                              onClick={() => decrement(product.id)} 
-                              className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
-                              whileTap={{ scale: 0.9 }}
+                    {cartItems.length === 0 ? (
+                      <p className="text-gray-500 text-sm py-6 text-center">Carrinho vazio</p>
+                    ) : (
+                      <div className="space-y-3">
+                        <AnimatePresence initial={false} mode="popLayout">
+                          {cartItems.map(({ product, qty }) => (
+                            <motion.div 
+                              key={product.id} 
+                              className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg"
+                              initial={{ opacity: 0, height: 0 }}
+                              animate={{ opacity: 1, height: 'auto' }}
+                              exit={{ opacity: 0, height: 0 }}
+                              transition={{ type: 'spring', stiffness: 500, damping: 30 }}
+                              layout
                             >
-                              <Minus className="w-3 h-3" />
-                            </motion.button>
+                              {product.image_url ? (
+                                <img src={joinUrl(API_BASE_URL, product.image_url)} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                              ) : (
+                                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                                  <ImageIcon className="w-5 h-5 text-gray-400" />
+                                </div>
+                              )}
+                              <div className="flex-1 min-w-0">
+                                <p className="font-medium text-gray-900 text-sm truncate">{product.name}</p>
+                                <p className="text-xs text-gray-500">{formatPrice(product.price)}</p>
+                              </div>
+                              <div className="flex items-center gap-1">
+                                <motion.button 
+                                  onClick={() => decrement(product.id)} 
+                                  className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                                  whileTap={{ scale: 0.9 }}
+                                >
+                                  <Minus className="w-3 h-3" />
+                                </motion.button>
+                                <motion.span 
+                                  className="w-5 text-center text-sm font-medium"
+                                  key={qty}
+                                  initial={{ scale: 1.3 }}
+                                  animate={{ scale: 1 }}
+                                >
+                                  {qty}
+                                </motion.span>
+                                <motion.button 
+                                  onClick={() => addToCart(product.id)} 
+                                  className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
+                                  whileTap={{ scale: 0.9 }}
+                                >
+                                  <Plus className="w-3 h-3" />
+                                </motion.button>
+                              </div>
+                            </motion.div>
+                          ))}
+                        </AnimatePresence>
+
+                        <div className="pt-3 border-t border-gray-200">
+                          <div className="flex justify-between mb-3">
+                            <span className="text-gray-600">Total</span>
                             <motion.span 
-                              className="w-5 text-center text-sm font-medium"
-                              key={qty}
-                              initial={{ scale: 1.3 }}
+                              className="text-xl font-bold text-blue-600"
+                              key={total}
+                              initial={{ scale: 1.1 }}
                               animate={{ scale: 1 }}
                             >
-                              {qty}
+                              {formatPrice(total)}
                             </motion.span>
-                            <motion.button 
-                              onClick={() => addToCart(product.id)} 
-                              className="w-6 h-6 rounded bg-gray-200 flex items-center justify-center hover:bg-gray-300"
-                              whileTap={{ scale: 0.9 }}
-                            >
-                              <Plus className="w-3 h-3" />
-                            </motion.button>
                           </div>
-                        </motion.div>
-                      ))}
-                    </AnimatePresence>
-
-                    <div className="pt-3 border-t border-gray-200">
-                      <div className="flex justify-between mb-3">
-                        <span className="text-gray-600">Total</span>
-                        <motion.span 
-                          className="text-xl font-bold text-blue-600"
-                          key={total}
-                          initial={{ scale: 1.1 }}
-                          animate={{ scale: 1 }}
-                        >
-                          {formatPrice(total)}
-                        </motion.span>
+                          <Button className="w-full">Finalizar pedido</Button>
+                        </div>
                       </div>
-                      <Button className="w-full">Finalizar pedido</Button>
-                    </div>
-                  </div>
-                )}
-              </Card>
-            </aside>
-          </div>
+                    )}
+                  </Card>
+                </motion.aside>
+              )}
+            </AnimatePresence>
+          </motion.div>
         )}
       </main>
 
