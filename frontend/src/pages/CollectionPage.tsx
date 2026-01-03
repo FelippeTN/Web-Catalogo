@@ -3,11 +3,11 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, ImageIcon, Trash2, Pencil, Save, X, Share2 } from 'lucide-react'
 
-import { collectionsService, isUnauthorized, productsService } from '@/api'
+import { collectionsService, isUnauthorized, productsService, ApiError } from '@/api'
 import { API_BASE_URL, joinUrl } from '@/api/config'
-import type { Collection, Product } from '@/api'
+import type { Collection, Product, UpgradeError } from '@/api'
 import { PageLayout, staggerContainer, staggerItem } from '@/components/layout'
-import { Button, Card, Input } from '@/components/ui'
+import { Button, Card, Input, UpgradeModal } from '@/components/ui'
 import { formatPrice, formatCurrencyInput, parseCurrencyInput } from '@/utils/format'
 
 interface CollectionPageProps {
@@ -45,6 +45,10 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null)
+
+  // Upgrade modal state
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeInfo, setUpgradeInfo] = useState<UpgradeError | null>(null)
 
   async function load() {
     if (!Number.isFinite(collectionId) || collectionId <= 0) {
@@ -104,6 +108,17 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
       setShowCreateForm(false)
     } catch (err) {
       if (isUnauthorized(err)) { onLogout(); navigate('/login', { replace: true }); return }
+      
+      if (err instanceof ApiError && err.status === 403) {
+        const body = err.body as UpgradeError
+        if (body?.upgrade_required) {
+          setUpgradeInfo(body)
+          setShowUpgradeModal(true)
+          setShowCreateForm(false)
+          return
+        }
+      }
+      
       setSaveError(err instanceof Error ? err.message : 'Erro')
     } finally { setIsSaving(false) }
   }
@@ -373,6 +388,16 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        type="product"
+        currentCount={upgradeInfo?.current_count ?? 0}
+        limit={upgradeInfo?.limit ?? 0}
+        planName={upgradeInfo?.plan_name ?? ''}
+      />
     </PageLayout>
   )
 }

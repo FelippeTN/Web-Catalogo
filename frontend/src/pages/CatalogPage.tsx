@@ -1,12 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Plus, Share2, Pencil, Trash2, ExternalLink, X } from 'lucide-react'
 
-import { collectionsService, isUnauthorized } from '@/api'
+import { collectionsService, isUnauthorized, ApiError } from '@/api'
+import type { UpgradeError } from '@/api'
 import { useCatalogs, type CatalogCard } from '@/hooks/useCatalogs'
 import { PageLayout, staggerContainer, staggerItem } from '@/components/layout'
-import { Button, Card, Badge, Input } from '@/components/ui'
+import { Button, Card, Badge, Input, UpgradeModal } from '@/components/ui'
 
 interface CatalogPageProps {
   onLogout: () => void
@@ -28,7 +29,9 @@ export default function CatalogPage({ onLogout }: CatalogPageProps) {
   const [isUpdating, setIsUpdating] = useState(false)
   const [updateError, setUpdateError] = useState<string | null>(null)
 
-  const canCreate = useMemo(() => catalogs.length < 5, [catalogs.length])
+  // Upgrade modal state
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [upgradeInfo, setUpgradeInfo] = useState<UpgradeError | null>(null)
 
   function handleLogout() {
     onLogout()
@@ -52,10 +55,6 @@ export default function CatalogPage({ onLogout }: CatalogPageProps) {
       setCreateError('Digite um nome para a vitrine')
       return
     }
-    if (!canCreate) {
-      setCreateError('Limite de 5 vitrines atingido')
-      return
-    }
 
     try {
       setIsCreating(true)
@@ -70,6 +69,17 @@ export default function CatalogPage({ onLogout }: CatalogPageProps) {
         navigate('/login', { replace: true })
         return
       }
+      
+      if (err instanceof ApiError && err.status === 403) {
+        const body = err.body as UpgradeError
+        if (body?.upgrade_required) {
+          setUpgradeInfo(body)
+          setShowUpgradeModal(true)
+          setShowCreateForm(false)
+          return
+        }
+      }
+      
       setCreateError(err instanceof Error ? err.message : 'Erro ao criar vitrine')
     } finally {
       setIsCreating(false)
@@ -255,17 +265,16 @@ export default function CatalogPage({ onLogout }: CatalogPageProps) {
           ))}
 
           {/* Create New Card */}
-          {canCreate && (
-            <motion.div variants={staggerItem} className="h-full">
-              <Card 
-                className={`h-full flex flex-col justify-center relative ${!showCreateForm ? 'min-h-[220px] items-center cursor-pointer hover:bg-gray-50 border-dashed border-2' : ''}`}
-                onClick={!showCreateForm ? () => setShowCreateForm(true) : undefined}
-                animate={false}
-              >
-                {!showCreateForm ? (
-                  <div className="flex flex-col items-center gap-2 text-gray-500">
-                    <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
-                      <Plus className="w-6 h-6 text-blue-600" />
+          <motion.div variants={staggerItem} className="h-full">
+            <Card 
+              className={`h-full flex flex-col justify-center relative ${!showCreateForm ? 'min-h-[220px] items-center cursor-pointer hover:bg-gray-50 border-dashed border-2' : ''}`}
+              onClick={!showCreateForm ? () => setShowCreateForm(true) : undefined}
+              animate={false}
+            >
+              {!showCreateForm ? (
+                <div className="flex flex-col items-center gap-2 text-gray-500">
+                  <div className="w-12 h-12 rounded-full bg-blue-50 flex items-center justify-center">
+                    <Plus className="w-6 h-6 text-blue-600" />
                     </div>
                     <span className="font-medium">Nova Vitrine</span>
                   </div>
@@ -306,9 +315,18 @@ export default function CatalogPage({ onLogout }: CatalogPageProps) {
                 )}
               </Card>
             </motion.div>
-          )}
         </motion.div>
       )}
+
+      {/* Upgrade Modal */}
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        type="collection"
+        currentCount={upgradeInfo?.current_count ?? 0}
+        limit={upgradeInfo?.limit ?? 0}
+        planName={upgradeInfo?.plan_name ?? ''}
+      />
     </PageLayout>
   )
 }

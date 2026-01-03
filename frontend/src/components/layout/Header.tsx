@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui'
-import { Store, LogOut, User, LayoutGrid } from 'lucide-react'
+import { Store, LogOut, User, LayoutGrid, Crown } from 'lucide-react'
 import { motion } from 'framer-motion'
 
 export interface HeaderProps {
@@ -55,6 +55,9 @@ export function Header({ isAuthenticated, onLogout }: HeaderProps) {
           <nav className="hidden md:flex items-center gap-1">
             <NavLink to="/catalogos" icon={<LayoutGrid className="w-4 h-4" />}>
               Minhas Vitrines
+            </NavLink>
+            <NavLink to="/planos" icon={<Crown className="w-4 h-4" />}>
+              Planos
             </NavLink>
           </nav>
         )}

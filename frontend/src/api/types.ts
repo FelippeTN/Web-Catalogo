@@ -54,3 +54,34 @@ export type PublicCatalogResponse = {
   collection: Collection
   products: Product[]
 }
+
+export type Plan = {
+  id: number
+  name: string
+  display_name: string
+  description: string
+  price: number
+  max_products: number
+  max_collections: number
+  features: string
+  is_active: boolean
+  created_at: string
+  updated_at: string
+}
+
+export type UserPlanInfo = {
+  plan: Plan
+  product_count: number
+  collection_count: number
+  can_create_product: boolean
+  can_create_collection: boolean
+}
+
+export type UpgradeError = {
+  error: string
+  limit: number
+  current_count: number
+  plan_name: string
+  upgrade_required: boolean
+}
+
