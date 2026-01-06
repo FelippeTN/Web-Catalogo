@@ -26,10 +26,10 @@ func CreateProduct(c *gin.Context) {
 	}
 	if !canCreate {
 		c.JSON(http.StatusForbidden, gin.H{
-			"error":         "Product limit reached",
-			"limit":         plan.MaxProducts,
-			"current_count": currentCount,
-			"plan_name":     plan.DisplayName,
+			"error":            "Product limit reached",
+			"limit":            plan.MaxProducts,
+			"current_count":    currentCount,
+			"plan_name":        plan.DisplayName,
 			"upgrade_required": true,
 		})
 		return
@@ -41,19 +41,38 @@ func CreateProduct(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("image")
-	if err == nil {
-		ext := filepath.Ext(file.Filename)
-		filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
-		path := filepath.Join("uploads", filename)
+	// Handle multiple images
+	form, _ := c.MultipartForm()
+	var uploadedImages []string
 
-		if err := c.SaveUploadedFile(file, path); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
-			return
+	if form != nil && form.File["images"] != nil {
+		files := form.File["images"]
+		for _, file := range files {
+			ext := filepath.Ext(file.Filename)
+			filename := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), strconv.Itoa(len(uploadedImages)), ext)
+			path := filepath.Join("uploads", filename)
+
+			if err := c.SaveUploadedFile(file, path); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+				return
+			}
+			uploadedImages = append(uploadedImages, "/uploads/"+filename)
 		}
+	}
 
-		imageURL := "/uploads/" + filename
-		input.ImageURL = &imageURL
+	if len(uploadedImages) == 0 {
+		file, err := c.FormFile("image")
+		if err == nil {
+			ext := filepath.Ext(file.Filename)
+			filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+			path := filepath.Join("uploads", filename)
+
+			if err := c.SaveUploadedFile(file, path); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+				return
+			}
+			uploadedImages = append(uploadedImages, "/uploads/"+filename)
+		}
 	}
 
 	if input.CollectionID != nil {
@@ -64,13 +83,18 @@ func CreateProduct(c *gin.Context) {
 		}
 	}
 
+	var mainImageURL *string
+	if len(uploadedImages) > 0 {
+		mainImageURL = &uploadedImages[0]
+	}
+
 	product := models.Product{
 		OwnerID:      ownerID,
 		CollectionID: input.CollectionID,
 		Name:         input.Name,
 		Description:  input.Description,
 		Price:        input.Price,
-		ImageURL:     input.ImageURL,
+		ImageURL:     mainImageURL,
 	}
 
 	if err := database.DB.Create(&product).Error; err != nil {
@@ -78,13 +102,24 @@ func CreateProduct(c *gin.Context) {
 		return
 	}
 
+	for i, imgURL := range uploadedImages {
+		productImage := models.ProductImage{
+			ProductID: product.ID,
+			ImageURL:  imgURL,
+			Position:  i,
+		}
+		database.DB.Create(&productImage)
+	}
+
+	database.DB.Preload("Images").First(&product, product.ID)
+
 	c.JSON(http.StatusCreated, product)
 }
 
 func GetProducts(c *gin.Context) {
 	var products []models.Product
 
-	query := database.DB.Model(&models.Product{})
+	query := database.DB.Model(&models.Product{}).Preload("Images")
 	if ownerIDRaw := c.Query("owner_id"); ownerIDRaw != "" {
 		ownerIDParsed, err := strconv.ParseUint(ownerIDRaw, 10, 64)
 		if err != nil {
@@ -118,7 +153,7 @@ func GetMyProducts(c *gin.Context) {
 	}
 
 	var products []models.Product
-	if err := database.DB.Where("owner_id = ?", ownerID).Order("created_at desc").Find(&products).Error; err != nil {
+	if err := database.DB.Preload("Images").Where("owner_id = ?", ownerID).Order("created_at desc").Find(&products).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve products"})
 		return
 	}
@@ -145,19 +180,62 @@ func UpdateProduct(c *gin.Context) {
 		return
 	}
 
-	file, err := c.FormFile("image")
-	if err == nil {
-		ext := filepath.Ext(file.Filename)
-		filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
-		path := filepath.Join("uploads", filename)
-
-		if err := c.SaveUploadedFile(file, path); err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
-			return
+	deleteImageIDsStr := c.PostFormArray("delete_image_ids")
+	var deleteImageIDs []uint
+	for _, idStr := range deleteImageIDsStr {
+		imgID, err := strconv.ParseUint(idStr, 10, 64)
+		if err == nil {
+			deleteImageIDs = append(deleteImageIDs, uint(imgID))
 		}
+	}
 
-		imageURL := "/uploads/" + filename
-		input.ImageURL = &imageURL
+	if len(deleteImageIDs) > 0 {
+		database.DB.Where("id IN ? AND product_id = ?", deleteImageIDs, uint(id)).Delete(&models.ProductImage{})
+	}
+
+	form, _ := c.MultipartForm()
+	var uploadedImages []string
+
+	if form != nil && form.File["images"] != nil {
+		files := form.File["images"]
+		for i, file := range files {
+			ext := filepath.Ext(file.Filename)
+			filename := fmt.Sprintf("%d_%d%s", time.Now().UnixNano(), i, ext)
+			path := filepath.Join("uploads", filename)
+
+			if err := c.SaveUploadedFile(file, path); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+				return
+			}
+			uploadedImages = append(uploadedImages, "/uploads/"+filename)
+		}
+	}
+
+	if len(uploadedImages) == 0 {
+		file, err := c.FormFile("image")
+		if err == nil {
+			ext := filepath.Ext(file.Filename)
+			filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
+			path := filepath.Join("uploads", filename)
+
+			if err := c.SaveUploadedFile(file, path); err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+				return
+			}
+			uploadedImages = append(uploadedImages, "/uploads/"+filename)
+		}
+	}
+
+	var maxPosition int
+	database.DB.Model(&models.ProductImage{}).Where("product_id = ?", uint(id)).Select("COALESCE(MAX(position), -1)").Scan(&maxPosition)
+
+	for i, imgURL := range uploadedImages {
+		productImage := models.ProductImage{
+			ProductID: uint(id),
+			ImageURL:  imgURL,
+			Position:  maxPosition + 1 + i,
+		}
+		database.DB.Create(&productImage)
 	}
 
 	updates := map[string]any{}
@@ -173,28 +251,28 @@ func UpdateProduct(c *gin.Context) {
 	if input.CollectionID != nil {
 		updates["collection_id"] = *input.CollectionID
 	}
-	if input.ImageURL != nil {
-		updates["image_url"] = *input.ImageURL
-	}
-	if len(updates) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "No fields to update"})
-		return
+
+	var firstImage models.ProductImage
+	if err := database.DB.Where("product_id = ?", uint(id)).Order("position asc").First(&firstImage).Error; err == nil {
+		updates["image_url"] = firstImage.ImageURL
 	}
 
-	result := database.DB.Model(&models.Product{}).
-		Where("id = ? AND owner_id = ?", uint(id), ownerID).
-		Updates(updates)
-	if result.Error != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not update product"})
-		return
-	}
-	if result.RowsAffected == 0 {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
-		return
+	if len(updates) > 0 {
+		result := database.DB.Model(&models.Product{}).
+			Where("id = ? AND owner_id = ?", uint(id), ownerID).
+			Updates(updates)
+		if result.Error != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not update product"})
+			return
+		}
+		if result.RowsAffected == 0 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Product not found"})
+			return
+		}
 	}
 
 	var updated models.Product
-	if err := database.DB.Where("id = ? AND owner_id = ?", uint(id), ownerID).First(&updated).Error; err != nil {
+	if err := database.DB.Preload("Images").Where("id = ? AND owner_id = ?", uint(id), ownerID).First(&updated).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve updated product"})
 		return
 	}
@@ -214,6 +292,8 @@ func DeleteProduct(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid id"})
 		return
 	}
+
+	database.DB.Where("product_id = ?", uint(id)).Delete(&models.ProductImage{})
 
 	result := database.DB.Where("id = ? AND owner_id = ?", uint(id), ownerID).Delete(&models.Product{})
 	if result.Error != nil {
