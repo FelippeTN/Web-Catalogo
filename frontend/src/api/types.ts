@@ -18,6 +18,14 @@ export type UpdateCollectionInput = {
   description?: string
 }
 
+export type ProductImage = {
+  id: number
+  product_id: number
+  image_url: string
+  position: number
+  created_at: string
+}
+
 export type Product = {
   id: number
   owner_id: number
@@ -26,6 +34,7 @@ export type Product = {
   description: string
   price: number
   image_url?: string | null
+  images?: ProductImage[]
   created_at: string
   updated_at: string
 }
@@ -36,6 +45,7 @@ export type CreateProductInput = {
   price: number
   collection_id?: number | null
   image?: File | null
+  images?: File[]
 }
 
 export type UpdateProductInput = {
@@ -44,6 +54,8 @@ export type UpdateProductInput = {
   price?: number
   collection_id?: number | null
   image?: File | null
+  images?: File[]
+  delete_image_ids?: number[]
 }
 
 export type ShareCollectionResponse = {

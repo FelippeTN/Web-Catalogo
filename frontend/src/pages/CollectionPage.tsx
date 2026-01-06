@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, ImageIcon, Trash2, Pencil, Save, X, Share2 } from 'lucide-react'
+import { Plus, ImageIcon, Trash2, Pencil, Save, X, Share2, ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { collectionsService, isUnauthorized, productsService, ApiError } from '@/api'
 import { API_BASE_URL, joinUrl } from '@/api/config'
@@ -32,7 +32,7 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [price, setPrice] = useState('')
-  const [image, setImage] = useState<File | null>(null)
+  const [images, setImages] = useState<File[]>([])
   const [isSaving, setIsSaving] = useState(false)
   const [saveError, setSaveError] = useState<string | null>(null)
 
@@ -40,13 +40,14 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
   const [editProductName, setEditProductName] = useState('')
   const [editProductDescription, setEditProductDescription] = useState('')
   const [editProductPrice, setEditProductPrice] = useState('')
-  const [editProductImage, setEditProductImage] = useState<File | null>(null)
+  const [editProductNewImages, setEditProductNewImages] = useState<File[]>([])
+  const [editProductDeleteImageIds, setEditProductDeleteImageIds] = useState<number[]>([])
 
   const [isUpdatingProduct, setIsUpdatingProduct] = useState(false)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [previewProduct, setPreviewProduct] = useState<Product | null>(null)
+  const [previewImageIndex, setPreviewImageIndex] = useState(0)
 
-  // Upgrade modal state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
   const [upgradeInfo, setUpgradeInfo] = useState<UpgradeError | null>(null)
 
@@ -101,8 +102,14 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
 
     try {
       setIsSaving(true)
-      await productsService.create({ name: trimmedName, description: trimmedDesc, price: parsedPrice, collection_id: collectionId, image })
-      setName(''); setDescription(''); setPrice(''); setImage(null)
+      await productsService.create({ 
+        name: trimmedName, 
+        description: trimmedDesc, 
+        price: parsedPrice, 
+        collection_id: collectionId, 
+        images: images.length > 0 ? images : undefined 
+      })
+      setName(''); setDescription(''); setPrice(''); setImages([])
 
       await load()
       setShowCreateForm(false)
@@ -156,9 +163,14 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
     setEditProductName(p.name)
     setEditProductDescription(p.description)
     setEditProductPrice(formatPrice(p.price))
-    setEditProductImage(null) 
+    setEditProductNewImages([])
+    setEditProductDeleteImageIds([])
   }
-  function cancelEditProduct() { setEditingProductId(null) }
+  function cancelEditProduct() { 
+    setEditingProductId(null)
+    setEditProductNewImages([])
+    setEditProductDeleteImageIds([])
+  }
 
   async function saveProductEdit(id: number) {
     const trimmedName = editProductName.trim()
@@ -167,10 +179,49 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
     if (!trimmedName || !trimmedDesc || !Number.isFinite(parsedPrice) || parsedPrice <= 0) return
     try {
       setIsUpdatingProduct(true)
-      await productsService.update(id, { name: trimmedName, description: trimmedDesc, price: parsedPrice, collection_id: collectionId, image: editProductImage })
+      await productsService.update(id, { 
+        name: trimmedName, 
+        description: trimmedDesc, 
+        price: parsedPrice, 
+        collection_id: collectionId, 
+        images: editProductNewImages.length > 0 ? editProductNewImages : undefined,
+        delete_image_ids: editProductDeleteImageIds.length > 0 ? editProductDeleteImageIds : undefined
+      })
       cancelEditProduct(); await load()
     } catch (err) { if (isUnauthorized(err)) { onLogout(); navigate('/login', { replace: true }) } }
     finally { setIsUpdatingProduct(false) }
+  }
+
+  function handleDeleteImageFromEdit(imageId: number) {
+    setEditProductDeleteImageIds(prev => [...prev, imageId])
+  }
+
+  function handleAddImagesToCreate(files: FileList | null) {
+    if (!files) return
+    setImages(prev => [...prev, ...Array.from(files)])
+  }
+
+  function handleRemoveImageFromCreate(index: number) {
+    setImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function handleAddImagesToEdit(files: FileList | null) {
+    if (!files) return
+    setEditProductNewImages(prev => [...prev, ...Array.from(files)])
+  }
+
+  function handleRemoveNewImageFromEdit(index: number) {
+    setEditProductNewImages(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function getProductImages(p: Product): string[] {
+    if (p.images && p.images.length > 0) {
+      return p.images.sort((a, b) => a.position - b.position).map(img => img.image_url)
+    }
+    if (p.image_url) {
+      return [p.image_url]
+    }
+    return []
   }
 
   async function deleteProduct(id: number) {
@@ -249,9 +300,63 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
                         <Input placeholder="Nome" value={editProductName} onChange={(e) => setEditProductName(e.target.value)} />
                         <Input placeholder="Descrição" value={editProductDescription} onChange={(e) => setEditProductDescription(e.target.value)} />
                         <Input placeholder="Preço" value={editProductPrice} onChange={(e) => handlePriceChange(e.target.value, setEditProductPrice)} />
-                        <label className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer">
-                          <ImageIcon className="w-4 h-4 text-gray-500" /><span className="text-sm text-gray-600">{editProductImage ? editProductImage.name : 'Alterar imagem'}</span>
-                          <input type="file" accept="image/*" onChange={(e) => setEditProductImage(e.target.files?.[0] ?? null)} className="hidden" />
+                        
+                        {/* Existing images */}
+                        {p.images && p.images.length > 0 && (
+                          <div className="space-y-2">
+                            <span className="text-sm text-gray-600">Imagens atuais:</span>
+                            <div className="flex flex-wrap gap-2">
+                              {p.images
+                                .filter(img => !editProductDeleteImageIds.includes(img.id))
+                                .map((img) => (
+                                  <div key={img.id} className="relative group">
+                                    <img 
+                                      src={joinUrl(API_BASE_URL, img.image_url)} 
+                                      alt="" 
+                                      className="w-16 h-16 object-cover rounded-lg"
+                                    />
+                                    <button
+                                      type="button"
+                                      onClick={() => handleDeleteImageFromEdit(img.id)}
+                                      className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <X className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* New images to add */}
+                        {editProductNewImages.length > 0 && (
+                          <div className="space-y-2">
+                            <span className="text-sm text-gray-600">Novas imagens:</span>
+                            <div className="flex flex-wrap gap-2">
+                              {editProductNewImages.map((file, idx) => (
+                                <div key={idx} className="relative group">
+                                  <img 
+                                    src={URL.createObjectURL(file)} 
+                                    alt="" 
+                                    className="w-16 h-16 object-cover rounded-lg"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveNewImageFromEdit(idx)}
+                                    className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        <label className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100">
+                          <ImageIcon className="w-4 h-4 text-gray-500" />
+                          <span className="text-sm text-gray-600">Adicionar imagens</span>
+                          <input type="file" accept="image/*" multiple onChange={(e) => handleAddImagesToEdit(e.target.files)} className="hidden" />
                         </label>
                         <div className="flex gap-2">
                           <Button size="sm" onClick={() => void saveProductEdit(p.id)} isLoading={isUpdatingProduct}><Save className="w-4 h-4 mr-1" />Salvar</Button>
@@ -260,18 +365,34 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
                       </div>
                     ) : (
                       <>
-                        {p.image_url ? (
-                          <motion.img
-                            src={joinUrl(API_BASE_URL, p.image_url)}
-                            alt={p.name}
-                            className="w-full h-40 object-cover rounded-lg mb-3 cursor-zoom-in"
-                            whileHover={{ scale: 1.02 }}
-                            transition={{ type: 'spring', stiffness: 300 }}
-                            onClick={() => setPreviewProduct(p)}
-                          />
-                        ) : (
-                          <div className="w-full h-40 bg-gray-100 rounded-lg mb-3 flex items-center justify-center"><ImageIcon className="w-10 h-10 text-gray-300" /></div>
-                        )}
+                        {(() => {
+                          const productImages = getProductImages(p)
+                          if (productImages.length > 0) {
+                            return (
+                              <div className="relative">
+                                <motion.img
+                                  src={joinUrl(API_BASE_URL, productImages[0])}
+                                  alt={p.name}
+                                  className="w-full h-40 object-cover rounded-lg mb-3 cursor-zoom-in"
+                                  whileHover={{ scale: 1.02 }}
+                                  transition={{ type: 'spring', stiffness: 300 }}
+                                  onClick={() => { setPreviewProduct(p); setPreviewImageIndex(0); }}
+                                />
+                                {productImages.length > 1 && (
+                                  <span className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                                    +{productImages.length - 1}
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          } else {
+                            return (
+                              <div className="w-full h-40 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
+                                <ImageIcon className="w-10 h-10 text-gray-300" />
+                              </div>
+                            )
+                          }
+                        })()}
                         <div className="flex justify-between items-start mb-2">
                           <h3 className="font-medium text-gray-900">{p.name}</h3>
                           <span className="font-semibold text-blue-600">{formatPrice(p.price)}</span>
@@ -318,10 +439,35 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
                         <Input placeholder="Nome" value={name} onChange={(e) => setName(e.target.value)} disabled={isSaving} autoFocus />
                         <Input placeholder="R$ 0,00" value={price} onChange={(e) => handlePriceChange(e.target.value, setPrice)} disabled={isSaving} />
                         <Input placeholder="Descrição" value={description} onChange={(e) => setDescription(e.target.value)} disabled={isSaving} />
+                        
+                        {/* Preview selected images */}
+                        {images.length > 0 && (
+                          <div className="flex flex-wrap gap-2">
+                            {images.map((file, idx) => (
+                              <div key={idx} className="relative group">
+                                <img 
+                                  src={URL.createObjectURL(file)} 
+                                  alt="" 
+                                  className="w-14 h-14 object-cover rounded-lg"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveImageFromCreate(idx)}
+                                  className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        
                         <label className="flex items-center gap-2 px-3 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors">
                           <ImageIcon className="w-4 h-4 text-gray-500" />
-                          <span className="text-sm text-gray-600 truncate max-w-[80px]">{image ? image.name : 'Imagem'}</span>
-                          <input type="file" accept="image/*" onChange={(e) => setImage(e.target.files?.[0] ?? null)} className="hidden" />
+                          <span className="text-sm text-gray-600 truncate">
+                            {images.length > 0 ? `${images.length} imagem(ns)` : 'Adicionar imagens'}
+                          </span>
+                          <input type="file" accept="image/*" multiple onChange={(e) => handleAddImagesToCreate(e.target.files)} className="hidden" />
                         </label>
                         <Button type="submit" isLoading={isSaving} className="w-full">
                           Adicionar
@@ -361,17 +507,58 @@ export default function CollectionPage({ onLogout }: CollectionPageProps) {
                 <X className="w-4 h-4 text-gray-700" />
               </button>
 
-              {previewProduct.image_url ? (
-                <img
-                  src={joinUrl(API_BASE_URL, previewProduct.image_url)}
-                  alt={previewProduct.name}
-                  className="w-full max-h-[60vh] object-contain bg-gray-50"
-                />
-              ) : (
-                <div className="w-full max-h-[60vh] bg-gray-100 flex items-center justify-center">
-                  <ImageIcon className="w-12 h-12 text-gray-300" />
-                </div>
-              )}
+              {(() => {
+                const productImages = getProductImages(previewProduct)
+                const currentImage = productImages[previewImageIndex] || productImages[0]
+                
+                return (
+                  <div className="relative">
+                    {currentImage ? (
+                      <img
+                        src={joinUrl(API_BASE_URL, currentImage)}
+                        alt={previewProduct.name}
+                        className="w-full max-h-[60vh] object-contain bg-gray-50"
+                      />
+                    ) : (
+                      <div className="w-full max-h-[60vh] bg-gray-100 flex items-center justify-center py-20">
+                        <ImageIcon className="w-12 h-12 text-gray-300" />
+                      </div>
+                    )}
+                    
+                    {/* Navigation arrows */}
+                    {productImages.length > 1 && (
+                      <>
+                        <button
+                          className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow flex items-center justify-center hover:bg-white transition-colors"
+                          onClick={() => setPreviewImageIndex(prev => prev === 0 ? productImages.length - 1 : prev - 1)}
+                          aria-label="Imagem anterior"
+                        >
+                          <ChevronLeft className="w-5 h-5 text-gray-700" />
+                        </button>
+                        <button
+                          className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow flex items-center justify-center hover:bg-white transition-colors"
+                          onClick={() => setPreviewImageIndex(prev => prev === productImages.length - 1 ? 0 : prev + 1)}
+                          aria-label="Próxima imagem"
+                        >
+                          <ChevronRight className="w-5 h-5 text-gray-700" />
+                        </button>
+                        
+                        {/* Image indicators */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                          {productImages.map((_, idx) => (
+                            <button
+                              key={idx}
+                              className={`w-2 h-2 rounded-full transition-colors ${idx === previewImageIndex ? 'bg-blue-600' : 'bg-white/60'}`}
+                              onClick={() => setPreviewImageIndex(idx)}
+                              aria-label={`Ver imagem ${idx + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
+              })()}
 
               <div className="p-6 md:p-8 space-y-3">
                 <p className="text-xs font-semibold uppercase tracking-wide text-blue-600">Visualização</p>

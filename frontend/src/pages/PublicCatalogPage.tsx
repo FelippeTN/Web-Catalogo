@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
 import { motion, AnimatePresence, type Variants } from 'framer-motion'
-import { ShoppingCart, Plus, Minus, ImageIcon, Store, X } from 'lucide-react'
+import { ShoppingCart, Plus, Minus, ImageIcon, Store, X, ChevronLeft, ChevronRight } from 'lucide-react'
 
 import { collectionsService } from '@/api'
 import { API_BASE_URL, joinUrl } from '@/api/config'
@@ -31,7 +31,18 @@ export default function PublicCatalogPage() {
   const [products, setProducts] = useState<Product[]>([])
   const [cart, setCart] = useState<CartState>({})
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [isCartOpen, setIsCartOpen] = useState(false)
+
+  function getProductImages(p: Product): string[] {
+    if (p.images && p.images.length > 0) {
+      return p.images.sort((a, b) => a.position - b.position).map(img => img.image_url)
+    }
+    if (p.image_url) {
+      return [p.image_url]
+    }
+    return []
+  }
 
   useEffect(() => {
     if (!token) return
@@ -208,21 +219,35 @@ export default function PublicCatalogPage() {
                         variant="bordered"
                         animate={false}
                         className="group cursor-pointer"
-                        onClick={() => setSelectedProduct(p)}
+                        onClick={() => { setSelectedProduct(p); setSelectedImageIndex(0); }}
                       >
-                        {p.image_url ? (
-                          <motion.img 
-                            src={joinUrl(API_BASE_URL, p.image_url)} 
-                            alt={p.name} 
-                            className="w-full h-44 object-cover rounded-lg mb-3 transition-all group-hover:scale-[1.02] group-hover:shadow-lg"
-                            whileHover={{ scale: 1.03 }}
-                            transition={{ type: 'spring', stiffness: 300 }}
-                          />
-                        ) : (
-                          <div className="w-full h-44 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
-                            <ImageIcon className="w-10 h-10 text-gray-300" />
-                          </div>
-                        )}
+                        {(() => {
+                          const productImages = getProductImages(p)
+                          if (productImages.length > 0) {
+                            return (
+                              <div className="relative">
+                                <motion.img 
+                                  src={joinUrl(API_BASE_URL, productImages[0])} 
+                                  alt={p.name} 
+                                  className="w-full h-44 object-cover rounded-lg mb-3 transition-all group-hover:scale-[1.02] group-hover:shadow-lg"
+                                  whileHover={{ scale: 1.03 }}
+                                  transition={{ type: 'spring', stiffness: 300 }}
+                                />
+                                {productImages.length > 1 && (
+                                  <span className="absolute top-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+                                    +{productImages.length - 1}
+                                  </span>
+                                )}
+                              </div>
+                            )
+                          } else {
+                            return (
+                              <div className="w-full h-44 bg-gray-100 rounded-lg mb-3 flex items-center justify-center">
+                                <ImageIcon className="w-10 h-10 text-gray-300" />
+                              </div>
+                            )
+                          }
+                        })()}
 
                         <h3 className="font-medium text-gray-900 mb-1">{p.name}</h3>
                         <p className="text-sm text-gray-500 line-clamp-2 mb-3">{p.description}</p>
@@ -286,13 +311,17 @@ export default function PublicCatalogPage() {
                               transition={{ type: 'spring', stiffness: 500, damping: 30 }}
                               layout
                             >
-                              {product.image_url ? (
-                                <img src={joinUrl(API_BASE_URL, product.image_url)} alt="" className="w-12 h-12 rounded-lg object-cover" />
-                              ) : (
-                                <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                                  <ImageIcon className="w-5 h-5 text-gray-400" />
-                                </div>
-                              )}
+                              {(() => {
+                                const cartImages = getProductImages(product)
+                                if (cartImages.length > 0) {
+                                  return <img src={joinUrl(API_BASE_URL, cartImages[0])} alt="" className="w-12 h-12 rounded-lg object-cover" />
+                                }
+                                return (
+                                  <div className="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
+                                    <ImageIcon className="w-5 h-5 text-gray-400" />
+                                  </div>
+                                )
+                              })()}
                               <div className="flex-1 min-w-0">
                                 <p className="font-medium text-gray-900 text-sm truncate">{product.name}</p>
                                 <p className="text-xs text-gray-500">{formatPrice(product.price)}</p>
@@ -374,17 +403,58 @@ export default function PublicCatalogPage() {
                 <X className="w-4 h-4 text-gray-700" />
               </button>
 
-              {selectedProduct.image_url ? (
-                <img
-                  src={joinUrl(API_BASE_URL, selectedProduct.image_url)}
-                  alt={selectedProduct.name}
-                  className="w-full max-h-[60vh] object-contain bg-gray-50"
-                />
-              ) : (
-                <div className="w-full max-h-[60vh] bg-gray-100 flex items-center justify-center">
-                  <ImageIcon className="w-12 h-12 text-gray-300" />
-                </div>
-              )}
+              {(() => {
+                const productImages = getProductImages(selectedProduct)
+                const currentImage = productImages[selectedImageIndex] || productImages[0]
+                
+                return (
+                  <div className="relative">
+                    {currentImage ? (
+                      <img
+                        src={joinUrl(API_BASE_URL, currentImage)}
+                        alt={selectedProduct.name}
+                        className="w-full max-h-[60vh] object-contain bg-gray-50"
+                      />
+                    ) : (
+                      <div className="w-full max-h-[60vh] bg-gray-100 flex items-center justify-center py-20">
+                        <ImageIcon className="w-12 h-12 text-gray-300" />
+                      </div>
+                    )}
+                    
+                    {/* Navigation arrows */}
+                    {productImages.length > 1 && (
+                      <>
+                        <button
+                          className="absolute left-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow flex items-center justify-center hover:bg-white transition-colors"
+                          onClick={() => setSelectedImageIndex(prev => prev === 0 ? productImages.length - 1 : prev - 1)}
+                          aria-label="Imagem anterior"
+                        >
+                          <ChevronLeft className="w-5 h-5 text-gray-700" />
+                        </button>
+                        <button
+                          className="absolute right-4 top-1/2 -translate-y-1/2 h-10 w-10 rounded-full bg-white/90 shadow flex items-center justify-center hover:bg-white transition-colors"
+                          onClick={() => setSelectedImageIndex(prev => prev === productImages.length - 1 ? 0 : prev + 1)}
+                          aria-label="Próxima imagem"
+                        >
+                          <ChevronRight className="w-5 h-5 text-gray-700" />
+                        </button>
+                        
+                        {/* Image indicators */}
+                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+                          {productImages.map((_, idx) => (
+                            <button
+                              key={idx}
+                              className={`w-2 h-2 rounded-full transition-colors ${idx === selectedImageIndex ? 'bg-blue-600' : 'bg-white/60'}`}
+                              onClick={() => setSelectedImageIndex(idx)}
+                              aria-label={`Ver imagem ${idx + 1}`}
+                            />
+                          ))}
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )
+              })()}
 
               <div className="p-6 md:p-8 space-y-3">
                 <div className="flex items-start justify-between gap-4">

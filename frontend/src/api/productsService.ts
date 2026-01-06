@@ -25,10 +25,16 @@ export class ApiProductsService implements ProductsService {
     formData.append('name', input.name)
     formData.append('description', input.description)
     formData.append('price', String(input.price))
+    
     if (input.collection_id) {
       formData.append('collection_id', String(input.collection_id))
     }
-    if (input.image) {
+
+    if (input.images && input.images.length > 0) {
+      input.images.forEach((file) => {
+        formData.append('images', file)
+      })
+    } else if (input.image) {
       formData.append('image', input.image)
     }
     return this.http.request<Product>('POST', '/protected/products', { auth: true, body: formData })
@@ -42,8 +48,19 @@ export class ApiProductsService implements ProductsService {
     if (input.collection_id !== undefined && input.collection_id !== null) {
       formData.append('collection_id', String(input.collection_id))
     }
-    if (input.image) {
+
+    if (input.images && input.images.length > 0) {
+      input.images.forEach((file) => {
+        formData.append('images', file)
+      })
+    } else if (input.image) {
       formData.append('image', input.image)
+    }
+
+    if (input.delete_image_ids && input.delete_image_ids.length > 0) {
+      input.delete_image_ids.forEach((imgId) => {
+        formData.append('delete_image_ids', String(imgId))
+      })
     }
     return this.http.request<Product>('PUT', `/protected/products/${id}`, { auth: true, body: formData })
   }
