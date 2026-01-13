@@ -7,6 +7,7 @@ import { plansService, isUnauthorized } from '@/api'
 import type { Plan, UserPlanInfo } from '@/api'
 import { PageLayout, staggerContainer, staggerItem } from '@/components/layout'
 import { Button, Card } from '@/components/ui'
+import { PaymentModal } from '@/components/PaymentModal'
 
 interface PlansPageProps {
   onLogout: () => void
@@ -32,6 +33,9 @@ export default function PlansPage({ onLogout }: PlansPageProps) {
   const [planInfo, setPlanInfo] = useState<UserPlanInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isUpgrading, setIsUpgrading] = useState<number | null>(null)
+  
+  const [isPaymentOpen, setIsPaymentOpen] = useState(false)
+  const [selectedPlanForPayment, setSelectedPlanForPayment] = useState<Plan | null>(null)
 
   useEffect(() => {
     async function load() {
@@ -55,13 +59,24 @@ export default function PlansPage({ onLogout }: PlansPageProps) {
     void load()
   }, [navigate, onLogout])
 
-  async function handleUpgrade(planId: number) {
+  async function handleUpgrade(plan: Plan) {
+    if (plan.price > 0) {
+      setSelectedPlanForPayment(plan)
+      setIsPaymentOpen(true)
+      return
+    }
+
+    await processUpgrade(plan.id)
+  }
+
+  async function processUpgrade(planId: number) {
     try {
       setIsUpgrading(planId)
       await plansService.upgradePlan(planId)
       // Reload plan info
       const infoData = await plansService.getMyPlanInfo()
       setPlanInfo(infoData)
+      setIsPaymentOpen(false)
     } catch (err) {
       if (isUnauthorized(err)) {
         onLogout()
@@ -69,6 +84,12 @@ export default function PlansPage({ onLogout }: PlansPageProps) {
       }
     } finally {
       setIsUpgrading(null)
+    }
+  }
+
+  function handlePaymentSuccess() {
+    if (selectedPlanForPayment) {
+       processUpgrade(selectedPlanForPayment.id)
     }
   }
 
@@ -270,7 +291,7 @@ export default function PlansPage({ onLogout }: PlansPageProps) {
                     variant={isCurrentPlan ? 'secondary' : isPro ? 'primary' : 'secondary'}
                     disabled={isCurrentPlan || isUpgrading !== null}
                     isLoading={isUpgrading === plan.id}
-                    onClick={() => handleUpgrade(plan.id)}
+                    onClick={() => handleUpgrade(plan)}
                   >
                     {isCurrentPlan ? 'Plano atual' : plan.price === 0 ? 'Selecionar' : 'Fazer upgrade'}
                   </Button>
@@ -279,6 +300,16 @@ export default function PlansPage({ onLogout }: PlansPageProps) {
             )
           })}
         </motion.div>
+      )}
+
+      {selectedPlanForPayment && (
+        <PaymentModal 
+          isOpen={isPaymentOpen}
+          onClose={() => setIsPaymentOpen(false)}
+          amount={Math.round(selectedPlanForPayment.price * 100)}
+          planName={selectedPlanForPayment.display_name}
+          onSuccess={handlePaymentSuccess}
+        />
       )}
 
       {/* FAQ or info */}

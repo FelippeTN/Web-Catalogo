@@ -16,4 +16,9 @@ export const plansService = {
     const response = await httpClient.post<{ message: string; plan: Plan }>('/protected/upgrade-plan', { plan_id: planId })
     return response
   },
+
+  async createPaymentIntent(amount: number, currency: string): Promise<{ clientSecret: string }> {
+    const response = await httpClient.post<{ clientSecret: string }>('/protected/create-payment-intent', { amount, currency })
+    return response
+  },
 }
