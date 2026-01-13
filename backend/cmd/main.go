@@ -54,6 +54,7 @@ func main() {
 		protectedRoutes.GET("/products", handlers.GetMyProducts)
 		protectedRoutes.PUT("/products/:id", handlers.UpdateProduct)
 		protectedRoutes.DELETE("/products/:id", handlers.DeleteProduct)
+		protectedRoutes.POST("/create-payment-intent", handlers.CreatePaymentIntent)
 	}
 
 	r.Run(":8080")
