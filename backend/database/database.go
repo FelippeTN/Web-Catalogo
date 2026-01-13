@@ -53,6 +53,17 @@ func ConnectDatabase() {
 }
 
 func seedPlans(db *gorm.DB) {
+	validNames := make([]string, len(models.DefaultPlans))
+	for i, plan := range models.DefaultPlans {
+		validNames[i] = plan.Name
+	}
+
+	if err := db.Where("name NOT IN ?", validNames).Delete(&models.Plan{}).Error; err != nil {
+		log.Printf("Failed to delete old plans: %v", err)
+	} else {
+		log.Println("Cleaned up old plans")
+	}
+
 	for _, plan := range models.DefaultPlans {
 		var existing models.Plan
 		result := db.Where("name = ?", plan.Name).First(&existing)
@@ -61,6 +72,19 @@ func seedPlans(db *gorm.DB) {
 				log.Printf("Failed to seed plan %s: %v", plan.Name, err)
 			} else {
 				log.Printf("Seeded plan: %s", plan.Name)
+			}
+		} else {
+			existing.DisplayName = plan.DisplayName
+			existing.Description = plan.Description
+			existing.Price = plan.Price
+			existing.MaxProducts = plan.MaxProducts
+			existing.MaxCollections = plan.MaxCollections
+			existing.Features = plan.Features
+			existing.IsActive = plan.IsActive
+			if err := db.Save(&existing).Error; err != nil {
+				log.Printf("Failed to update plan %s: %v", plan.Name, err)
+			} else {
+				log.Printf("Updated plan: %s", plan.Name)
 			}
 		}
 	}
