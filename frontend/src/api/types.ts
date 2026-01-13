@@ -65,6 +65,7 @@ export type ShareCollectionResponse = {
 export type PublicCatalogResponse = {
   collection: Collection
   products: Product[]
+  owner_phone: string
 }
 
 export type Plan = {

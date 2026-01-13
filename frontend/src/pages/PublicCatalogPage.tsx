@@ -33,6 +33,7 @@ export default function PublicCatalogPage() {
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null)
   const [selectedImageIndex, setSelectedImageIndex] = useState(0)
   const [isCartOpen, setIsCartOpen] = useState(false)
+  const [ownerPhone, setOwnerPhone] = useState('')
 
   function getProductImages(p: Product): string[] {
     if (p.images && p.images.length > 0) {
@@ -68,6 +69,7 @@ export default function PublicCatalogPage() {
         if (!mounted) return
         setTitle(data.collection.name || 'Vitrine')
         setProducts(data.products)
+        setOwnerPhone(data.owner_phone || '')
       } catch (err) {
         if (!mounted) return
         setErrorMessage(err instanceof Error ? err.message : 'Erro')
@@ -106,6 +108,25 @@ export default function PublicCatalogPage() {
 
   const total = useMemo(() => cartItems.reduce((acc, i) => acc + i.product.price * i.qty, 0), [cartItems])
   const totalItems = useMemo(() => cartItems.reduce((acc, i) => acc + i.qty, 0), [cartItems])
+
+  function handleFinishOrder() {
+    if (cartItems.length === 0 || !ownerPhone) return
+    
+    const phoneNumber = ownerPhone.replace(/\D/g, '')
+    
+    let message = `🛒 *Novo Pedido - ${title}*\n\n`
+    message += `📦 *Itens do pedido:*\n`
+    
+    cartItems.forEach(({ product, qty }) => {
+      message += `• ${product.name} - Qtd: ${qty} - ${formatPrice(product.price * qty)}\n`
+    })
+    
+    message += `\n💰 *Total: ${formatPrice(total)}*`
+    
+    const encodedMessage = encodeURIComponent(message)
+    
+    window.open(`https://wa.me/55${phoneNumber}?text=${encodedMessage}`, '_blank')
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -366,7 +387,7 @@ export default function PublicCatalogPage() {
                               {formatPrice(total)}
                             </motion.span>
                           </div>
-                          <Button className="w-full">Finalizar pedido</Button>
+                          <Button className="w-full" onClick={handleFinishOrder} disabled={!ownerPhone}>Finalizar pedido</Button>
                         </div>
                       </div>
                     )}

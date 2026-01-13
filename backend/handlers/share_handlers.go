@@ -19,6 +19,7 @@ type shareCollectionResponse struct {
 type publicCatalogResponse struct {
 	Collection models.Collection `json:"collection"`
 	Products   []models.Product  `json:"products"`
+	OwnerPhone string            `json:"owner_phone"`
 }
 
 func ShareCollection(c *gin.Context) {
@@ -79,11 +80,17 @@ func GetPublicCatalogByToken(c *gin.Context) {
 		return
 	}
 
+	var owner models.User
+	ownerPhone := ""
+	if err := database.DB.First(&owner, collection.OwnerID).Error; err == nil {
+		ownerPhone = owner.Number
+	}
+
 	var products []models.Product
 	if err := database.DB.Preload("Images").Where("owner_id = ? AND collection_id = ?", collection.OwnerID, collection.ID).Order("created_at desc").Find(&products).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not retrieve products"})
 		return
 	}
 
-	c.JSON(http.StatusOK, publicCatalogResponse{Collection: collection, Products: products})
+	c.JSON(http.StatusOK, publicCatalogResponse{Collection: collection, Products: products, OwnerPhone: ownerPhone})
 }
