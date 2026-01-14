@@ -1,8 +1,7 @@
-version: '3.8'
-
 services:
   backend:
     build: ./backend
+    restart: unless-stopped
     ports:
       - "8080:8080"
     env_file:
@@ -23,6 +22,7 @@ services:
 
   frontend:
     build: ./frontend
+    restart: unless-stopped
     ports:
       - "5173:5173"
     volumes:
@@ -40,6 +40,7 @@ services:
 
   postgres:
     image: postgres:15-alpine
+    restart: unless-stopped
     env_file:
       - .env
     environment:
@@ -55,6 +56,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
+    restart: unless-stopped
     env_file:
       - .env
     environment:
