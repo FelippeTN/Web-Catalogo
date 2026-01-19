@@ -15,4 +15,7 @@ export default defineConfig({
       "@": path.resolve(__dirname, "./src"),
     },
   },
+  server: {
+    allowedHosts: ['vitrinerapida.com.br', 'www.vitrinerapida.com.br']
+  }
 })
