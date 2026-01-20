@@ -1,5 +1,7 @@
 import { type ButtonHTMLAttributes, forwardRef } from 'react'
 import { motion } from 'framer-motion'
+import { twMerge } from 'tailwind-merge'
+import { clsx } from 'clsx'
 
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 export type ButtonSize = 'sm' | 'md' | 'lg' | 'icon'
@@ -56,7 +58,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         type={type}
         disabled={disabled || isLoading}
-        className={`${baseClasses} ${variantClasses[variant]} ${sizeClasses[size]} ${className}`}
+        className={twMerge(clsx(baseClasses, variantClasses[variant], sizeClasses[size], className))}
         onClick={onClick}
         whileHover={{ scale: disabled || isLoading ? 1 : 1.02 }}
         whileTap={{ scale: disabled || isLoading ? 1 : 0.98 }}

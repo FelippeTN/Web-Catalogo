@@ -279,7 +279,7 @@ export default function WelcomePage() {
               <Button 
                 size="lg" 
                 onClick={() => navigate('/registro')}
-                className="bg-white !text-blue-600 hover:bg-blue-50 hover:text-blue-700 border-0 shadow-2xl"
+                className="bg-white text-blue-600 hover:bg-blue-50 hover:text-blue-700 border-0 shadow-2xl"
               >
                 Criar minha vitrine grátis
               </Button>
