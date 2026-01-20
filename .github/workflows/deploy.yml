@@ -3,6 +3,8 @@ name: Deploy to Vitrine Rapida to Hostinger
 on:
   push:
     branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   deploy:
