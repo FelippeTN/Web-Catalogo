@@ -15,6 +15,7 @@ func main() {
 	database.ConnectDatabase()
 
 	r := gin.Default()
+	r.SetTrustedProxies(nil)
 
 	r.Use(cors.New(cors.Config{
 		AllowOrigins: []string{
