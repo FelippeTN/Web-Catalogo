@@ -1,21 +1,58 @@
-name: Deploy to Vitrine Rapida to Hostinger
+name: Deploy to Production
 
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  DOCKER_BUILDKIT: 1
+  COMPOSE_DOCKER_CLI_BUILD: 1
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: production
+
     steps:
-      - uses: actions/checkout@v5
-      
-      - name: Deploy to Hostinger
-        uses: hostinger/deploy-on-vps@v2
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
         with:
-          api-key: ${{ secrets.HOSTINGER_API_KEY }}
-          virtual-machine: ${{ secrets.HOSTINGER_VM_ID }}
-          project-name: web-catalogo
-          docker-compose-path: docker-compose.prod.yml
+          host: ${{ secrets.HOSTINGER_VM_ID }}
+          username: root
+          key: ${{ secrets.HOSTINGER_API_KEY }}
+          port: 22
+          timeout: 60s
+          command_timeout: 30m
+          script_stop: true
+          script: |
+            set -e
+            echo "🚀 Iniciando deploy..."
+            
+            cd /root/Web-Catalogo || cd ~/Web-Catalogo
+            
+            echo "📥 Atualizando código..."
+            git fetch --all
+            git reset --hard origin/main
+            
+            echo "🛑 Parando containers antigos..."
+            docker compose -f docker-compose.prod.yml down --remove-orphans || true
+            
+            echo "🧹 Limpando imagens não utilizadas..."
+            docker image prune -f || true
+            
+            echo "🔨 Buildando e iniciando containers..."
+            docker compose -f docker-compose.prod.yml build --no-cache
+            docker compose -f docker-compose.prod.yml up -d
+            
+            echo "⏳ Aguardando banco de dados..."
+            sleep 10
+            
+            echo "✅ Verificando status dos containers..."
+            docker compose -f docker-compose.prod.yml ps
+            
+            echo "🎉 Deploy concluído com sucesso!"
