@@ -9,6 +9,7 @@ import (
 
 	"github.com/FelippeTN/Web-Catalogo/backend/database"
 	"github.com/FelippeTN/Web-Catalogo/backend/models"
+	"github.com/FelippeTN/Web-Catalogo/backend/utils"
 	"github.com/gin-gonic/gin"
 )
 
@@ -48,30 +49,46 @@ func CreateProduct(c *gin.Context) {
 	if form != nil && form.File["images"] != nil {
 		files := form.File["images"]
 		for _, file := range files {
-			ext := filepath.Ext(file.Filename)
-			filename := fmt.Sprintf("%d_%s%s", time.Now().UnixNano(), strconv.Itoa(len(uploadedImages)), ext)
-			path := filepath.Join("uploads", filename)
+			baseFilename := fmt.Sprintf("%d_%s", time.Now().UnixNano(), strconv.Itoa(len(uploadedImages)))
+			jpgFilename := baseFilename + ".jpg"
+			jpgPath := filepath.Join("uploads", jpgFilename)
 
-			if err := c.SaveUploadedFile(file, path); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
-				return
+			if err := utils.SaveCompressedImage(file, jpgPath); err == nil {
+				uploadedImages = append(uploadedImages, "/uploads/"+jpgFilename)
+			} else {
+				ext := filepath.Ext(file.Filename)
+				filename := baseFilename + ext
+				path := filepath.Join("uploads", filename)
+
+				if err := c.SaveUploadedFile(file, path); err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+					return
+				}
+				uploadedImages = append(uploadedImages, "/uploads/"+filename)
 			}
-			uploadedImages = append(uploadedImages, "/uploads/"+filename)
 		}
 	}
 
 	if len(uploadedImages) == 0 {
 		file, err := c.FormFile("image")
 		if err == nil {
-			ext := filepath.Ext(file.Filename)
-			filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
-			path := filepath.Join("uploads", filename)
+			baseFilename := fmt.Sprintf("%d", time.Now().UnixNano())
+			jpgFilename := baseFilename + ".jpg"
+			jpgPath := filepath.Join("uploads", jpgFilename)
 
-			if err := c.SaveUploadedFile(file, path); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
-				return
+			if err := utils.SaveCompressedImage(file, jpgPath); err == nil {
+				uploadedImages = append(uploadedImages, "/uploads/"+jpgFilename)
+			} else {
+				ext := filepath.Ext(file.Filename)
+				filename := baseFilename + ext
+				path := filepath.Join("uploads", filename)
+
+				if err := c.SaveUploadedFile(file, path); err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+					return
+				}
+				uploadedImages = append(uploadedImages, "/uploads/"+filename)
 			}
-			uploadedImages = append(uploadedImages, "/uploads/"+filename)
 		}
 	}
 
@@ -199,30 +216,48 @@ func UpdateProduct(c *gin.Context) {
 	if form != nil && form.File["images"] != nil {
 		files := form.File["images"]
 		for i, file := range files {
-			ext := filepath.Ext(file.Filename)
-			filename := fmt.Sprintf("%d_%d%s", time.Now().UnixNano(), i, ext)
-			path := filepath.Join("uploads", filename)
+			baseFilename := fmt.Sprintf("%d_%d", time.Now().UnixNano(), i)
+			jpgFilename := baseFilename + ".jpg"
+			jpgPath := filepath.Join("uploads", jpgFilename)
 
-			if err := c.SaveUploadedFile(file, path); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
-				return
+			if err := utils.SaveCompressedImage(file, jpgPath); err == nil {
+				uploadedImages = append(uploadedImages, "/uploads/"+jpgFilename)
+			} else {
+				// Fallback
+				ext := filepath.Ext(file.Filename)
+				filename := baseFilename + ext
+				path := filepath.Join("uploads", filename)
+
+				if err := c.SaveUploadedFile(file, path); err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+					return
+				}
+				uploadedImages = append(uploadedImages, "/uploads/"+filename)
 			}
-			uploadedImages = append(uploadedImages, "/uploads/"+filename)
 		}
 	}
 
 	if len(uploadedImages) == 0 {
 		file, err := c.FormFile("image")
 		if err == nil {
-			ext := filepath.Ext(file.Filename)
-			filename := fmt.Sprintf("%d%s", time.Now().UnixNano(), ext)
-			path := filepath.Join("uploads", filename)
+			baseFilename := fmt.Sprintf("%d", time.Now().UnixNano())
+			jpgFilename := baseFilename + ".jpg"
+			jpgPath := filepath.Join("uploads", jpgFilename)
 
-			if err := c.SaveUploadedFile(file, path); err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
-				return
+			if err := utils.SaveCompressedImage(file, jpgPath); err == nil {
+				uploadedImages = append(uploadedImages, "/uploads/"+jpgFilename)
+			} else {
+				// Fallback
+				ext := filepath.Ext(file.Filename)
+				filename := baseFilename + ext
+				path := filepath.Join("uploads", filename)
+
+				if err := c.SaveUploadedFile(file, path); err != nil {
+					c.JSON(http.StatusInternalServerError, gin.H{"error": "Could not save image"})
+					return
+				}
+				uploadedImages = append(uploadedImages, "/uploads/"+filename)
 			}
-			uploadedImages = append(uploadedImages, "/uploads/"+filename)
 		}
 	}
 
