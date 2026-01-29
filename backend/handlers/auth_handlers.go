@@ -77,7 +77,7 @@ func Register(c *gin.Context) {
 }
 
 func GetMe(c *gin.Context) {
-	userID, _ := c.Get("userID")
+	userID, _ := c.Get("user_id")
 	var user models.User
 
 	if err := database.DB.Preload("Plan").First(&user, userID).Error; err != nil {
@@ -89,7 +89,7 @@ func GetMe(c *gin.Context) {
 }
 
 func UpdateMe(c *gin.Context) {
-	userID, _ := c.Get("userID")
+	userID, _ := c.Get("user_id")
 	var user models.User
 
 	if err := database.DB.First(&user, userID).Error; err != nil {
@@ -126,7 +126,7 @@ func UpdateMe(c *gin.Context) {
 }
 
 func ChangePassword(c *gin.Context) {
-	userID, _ := c.Get("userID")
+	userID, _ := c.Get("user_id")
 	var user models.User
 
 	if err := database.DB.First(&user, userID).Error; err != nil {
