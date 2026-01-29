@@ -9,9 +9,10 @@ import { formatPhone } from '@/utils/format'
 
 interface SettingsPageProps {
   user?: UserType | null
+  onLogout?: () => void
 }
 
-export default function SettingsPage({ user }: SettingsPageProps) {
+export default function SettingsPage({ user, onLogout }: SettingsPageProps) {
   const [activeTab, setActiveTab] = useState<'profile' | 'security'>('profile')
   const [isLoading, setIsLoading] = useState(false)
   const [message, setMessage] = useState({ type: '', text: '' })
@@ -136,6 +137,7 @@ export default function SettingsPage({ user }: SettingsPageProps) {
     <PageLayout
       isAuthenticated={true}
       user={user}
+      onLogout={onLogout}
     >
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Configurações</h1>

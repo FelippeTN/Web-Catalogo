@@ -133,7 +133,7 @@ function App() {
         path="/configuracoes"
         element={
           isAuthenticated ? (
-            <SettingsPage user={user} />
+            <SettingsPage onLogout={authHandlers.onLogout} user={user} />
           ) : (
             <Navigate to="/login" replace />
           )
