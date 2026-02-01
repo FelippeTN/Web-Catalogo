@@ -3,8 +3,16 @@ import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '@/components/AuthLayout'
 import { Button, Input } from '@/components/ui'
 import { API_BASE_URL } from '@/api/config'
-
 import { formatPhone } from '@/utils/format'
+import { 
+  isValidEmail, 
+  isValidUsername, 
+  isValidPassword, 
+  isValidPhone,
+  normalizeEmail,
+  cleanPhone,
+  sanitizeInput
+} from '@/utils/sanitize'
 
 interface RegisterPageProps {
   onAuthenticated: () => void
@@ -24,23 +32,54 @@ export default function RegisterPage(_: RegisterPageProps) {
     e.preventDefault()
     setError('')
 
-    if (!name || !email || !number || !password) {
+    // Sanitize and validate inputs
+    const sanitizedName = sanitizeInput(name, 50)
+    const normalizedEmail = normalizeEmail(email)
+    const cleanNumber = cleanPhone(number)
+
+    if (!sanitizedName || !normalizedEmail || !cleanNumber || !password) {
       setError('Preencha todos os campos')
+      return
+    }
+
+    if (!isValidUsername(sanitizedName)) {
+      setError('Nome da loja inválido. Use apenas letras, números e espaços (2-50 caracteres).')
+      return
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      setError('Formato de email inválido')
+      return
+    }
+
+    if (!isValidPhone(cleanNumber)) {
+      setError('Número de telefone inválido (deve ter 10-11 dígitos)')
+      return
+    }
+
+    if (!isValidPassword(password)) {
+      setError('Senha deve ter entre 6 e 128 caracteres')
       return
     }
 
     try {
       setIsLoading(true)
-      const cleanNumber = number.replace(/\D/g, '')
 
       const response = await fetch(`${API_BASE_URL}/public/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username: name, email, number: cleanNumber, password }),
+        body: JSON.stringify({ 
+          username: sanitizedName, 
+          email: normalizedEmail, 
+          number: cleanNumber, 
+          password 
+        }),
       })
 
       if (response.ok) {
         navigate('/login')
+      } else if (response.status === 429) {
+        setError('Muitas tentativas de registro. Tente novamente mais tarde.')
       } else {
         const data = await response.json()
         setError(data.error || 'Erro ao criar conta')
@@ -54,6 +93,14 @@ export default function RegisterPage(_: RegisterPageProps) {
 
   function handleNumberChange(e: React.ChangeEvent<HTMLInputElement>) {
     setNumber(formatPhone(e.target.value))
+  }
+
+  function handleNameChange(e: React.ChangeEvent<HTMLInputElement>) {
+    // Only allow letters, numbers, accents and spaces
+    const value = e.target.value
+    if (value === '' || /^[a-zA-Z0-9À-ÿ\s]*$/.test(value)) {
+      setName(value)
+    }
   }
 
   return (
@@ -75,8 +122,10 @@ export default function RegisterPage(_: RegisterPageProps) {
           type="text"
           placeholder="Ex: Minha Loja"
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={handleNameChange}
           disabled={isLoading}
+          maxLength={50}
+          autoComplete="organization"
         />
 
         <Input
@@ -86,6 +135,8 @@ export default function RegisterPage(_: RegisterPageProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading}
+          maxLength={254}
+          autoComplete="email"
         />
 
         <Input
@@ -95,6 +146,8 @@ export default function RegisterPage(_: RegisterPageProps) {
           value={number}
           onChange={handleNumberChange}
           disabled={isLoading}
+          maxLength={15}
+          autoComplete="tel"
         />
 
         <Input
@@ -104,6 +157,8 @@ export default function RegisterPage(_: RegisterPageProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={isLoading}
+          maxLength={128}
+          autoComplete="new-password"
         />
 
         <Button type="submit" size="lg" isLoading={isLoading} className="w-full mt-2">

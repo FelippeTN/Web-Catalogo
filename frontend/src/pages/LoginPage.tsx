@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import AuthLayout from '@/components/AuthLayout'
 import { Button, Input } from '@/components/ui'
 import { API_BASE_URL } from '@/api/config'
+import { isValidEmail, normalizeEmail } from '@/utils/sanitize'
 
 interface LoginPageProps {
   onAuthenticated: () => void
@@ -19,8 +20,21 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
     e.preventDefault()
     setError('')
 
-    if (!email || !password) {
+    // Validate inputs
+    const normalizedEmail = normalizeEmail(email)
+    
+    if (!normalizedEmail || !password) {
       setError('Preencha todos os campos')
+      return
+    }
+
+    if (!isValidEmail(normalizedEmail)) {
+      setError('Formato de email inválido')
+      return
+    }
+
+    if (password.length > 128) {
+      setError('Senha muito longa')
       return
     }
 
@@ -29,7 +43,7 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
       const response = await fetch(`${API_BASE_URL}/public/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: normalizedEmail, password }),
       })
 
       if (response.ok) {
@@ -37,6 +51,8 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
         localStorage.setItem('token', data.token)
         onAuthenticated()
         navigate('/catalogos')
+      } else if (response.status === 429) {
+        setError('Muitas tentativas. Aguarde alguns minutos.')
       } else {
         const data = await response.json()
         setError(data.error || 'Email ou senha inválidos')
@@ -69,6 +85,8 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           disabled={isLoading}
+          maxLength={254}
+          autoComplete="email"
         />
 
         <Input
@@ -78,6 +96,8 @@ export default function LoginPage({ onAuthenticated }: LoginPageProps) {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           disabled={isLoading}
+          maxLength={128}
+          autoComplete="current-password"
         />
 
         <Button type="submit" size="lg" isLoading={isLoading} className="w-full mt-2">

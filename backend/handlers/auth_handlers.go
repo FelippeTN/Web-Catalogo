@@ -1,7 +1,11 @@
 package handlers
 
 import (
+	"html"
 	"net/http"
+	"regexp"
+	"strings"
+	"unicode/utf8"
 
 	"github.com/FelippeTN/Web-Catalogo/backend/database"
 	"github.com/FelippeTN/Web-Catalogo/backend/models"
@@ -10,6 +14,37 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+var (
+	emailRegex    = regexp.MustCompile(`^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`)
+	usernameRegex = regexp.MustCompile(`^[a-zA-Z0-9À-ÿ\s]+$`)
+)
+
+func sanitizeInput(input string, maxLength int) string {
+	input = strings.TrimSpace(input)
+	input = html.EscapeString(input)
+	
+	if utf8.RuneCountInString(input) > maxLength {
+		runes := []rune(input)
+		input = string(runes[:maxLength])
+	}
+	
+	return input
+}
+
+func validateEmail(email string) bool {
+	if len(email) > 254 {
+		return false
+	}
+	return emailRegex.MatchString(email)
+}
+
+func validateUsername(username string) bool {
+	if len(username) < 2 || len(username) > 50 {
+		return false
+	}
+	return usernameRegex.MatchString(username)
+}
 
 func Login(c *gin.Context) {
 	var input struct {
@@ -22,8 +57,19 @@ func Login(c *gin.Context) {
 		return
 	}
 
+	email := strings.ToLower(strings.TrimSpace(input.Email))
+	
+	if !validateEmail(email) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de email inválido"})
+		return
+	}
+	if len(input.Password) > 128 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Senha muito longa"})
+		return
+	}
+
 	var user models.User
-	if err := database.DB.Where("email = ?", input.Email).First(&user).Error; err != nil {
+	if err := database.DB.Where("email = ?", email).First(&user).Error; err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Credenciais inválidas"})
 		return
 	}
@@ -55,10 +101,34 @@ func Register(c *gin.Context) {
 		return
 	}
 
+	username := sanitizeInput(input.Username, 50)
+	email := strings.ToLower(strings.TrimSpace(input.Email))
+	number := regexp.MustCompile(`[^0-9]`).ReplaceAllString(input.Number, "")
+
+	if !validateUsername(username) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Nome da loja inválido. Use apenas letras, números e espaços."})
+		return
+	}
+
+	if !validateEmail(email) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Formato de email inválido"})
+		return
+	}
+
+	if len(number) < 10 || len(number) > 11 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Número de telefone inválido"})
+		return
+	}
+
+	if len(input.Password) > 128 {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Senha muito longa (máximo 128 caracteres)"})
+		return
+	}
+
 	user := models.User{
-		Username: input.Username,
-		Email:    input.Email,
-		Number:   input.Number,
+		Username: username,
+		Email:    email,
+		Number:   number,
 	}
 
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(input.Password), bcrypt.DefaultCost)
@@ -69,12 +139,12 @@ func Register(c *gin.Context) {
 	user.Password = string(hashedPassword)
 
 	var existingUser models.User
-	if err := database.DB.Where("username = ?", input.Username).First(&existingUser).Error; err == nil {
+	if err := database.DB.Where("username = ?", username).First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Esse nome ja esta sendo usado"})
 		return
 	}
 
-	if err := database.DB.Where("email = ?", input.Email).First(&existingUser).Error; err == nil {
+	if err := database.DB.Where("email = ?", email).First(&existingUser).Error; err == nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Este email já está sendo usado"})
 		return
 	}
@@ -119,11 +189,9 @@ func UpdateMe(c *gin.Context) {
 		return
 	}
 
-	// Update fields if provided
 	if input.Username != "" {
 		user.Username = input.Username
 	}
-	// Email changes are not allowed via this endpoint
 	if input.Number != "" {
 		user.Number = input.Number
 	}
