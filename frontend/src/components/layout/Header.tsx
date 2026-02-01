@@ -1,6 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui'
-import { Store, LogOut, User as UserIcon, LayoutGrid, Crown, Settings, ChevronDown } from 'lucide-react'
+import { Store, LogOut, User as UserIcon, LayoutGrid, Crown, Settings, ChevronDown, Menu, X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useState, useRef, useEffect } from 'react'
 
@@ -26,12 +26,21 @@ export function Header({ isAuthenticated, onLogout, user }: HeaderProps) {
   const isAuthPage = ['/login', '/registro', '/'].includes(location.pathname)
   
   const [isDropdownOpen, setIsDropdownOpen] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const mobileMenuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setIsMobileMenuOpen(false)
+  }, [location.pathname])
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false)
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setIsMobileMenuOpen(false)
       }
     }
     document.addEventListener('mousedown', handleClickOutside)
@@ -87,14 +96,23 @@ export function Header({ isAuthenticated, onLogout, user }: HeaderProps) {
 
         {/* Ações do Usuário */}
         <div className="flex items-center gap-2">
+          {/* Botão hamburger para mobile - apenas para usuários autenticados */}
+          {isAuthenticated && !isPublicPage && (
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Menu de navegação"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
+          )}
+
           {isPublicPage ? (
-            // Header para página pública - apenas logo
             <div className="text-xs text-gray-400">
               Vitrine compartilhada
             </div>
           ) : isAuthenticated ? (
-            // Header para usuário autenticado
-            <div className="relative" ref={dropdownRef}>
+            <div className="relative hidden md:block" ref={dropdownRef}>
               <button 
                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                 className="flex items-center gap-3 pl-3 pr-2 py-1.5 rounded-full hover:bg-gray-50 transition-colors border border-transparent hover:border-gray-200"
@@ -170,6 +188,75 @@ export function Header({ isAuthenticated, onLogout, user }: HeaderProps) {
           ) : null}
         </div>
       </div>
+
+      {/* Menu Mobile */}
+      <AnimatePresence>
+        {isAuthenticated && !isPublicPage && isMobileMenuOpen && (
+          <motion.div
+            ref={mobileMenuRef}
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: 'auto' }}
+            exit={{ opacity: 0, height: 0 }}
+            className="md:hidden border-t border-gray-200 bg-white overflow-hidden"
+          >
+            <nav className="px-4 py-3 space-y-1">
+              {/* Informações do usuário */}
+              <div className="px-3 py-3 mb-2 bg-gray-50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 text-blue-700 rounded-full flex items-center justify-center border border-blue-200 font-medium">
+                    {user?.username?.charAt(0).toUpperCase() || <UserIcon className="w-5 h-5" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-gray-900">{user?.username || 'Usuário'}</p>
+                    <p className="text-xs text-gray-500">{user?.email || ''}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Links de navegação */}
+              <Link
+                to="/catalogos"
+                className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <LayoutGrid className="w-5 h-5 text-gray-500" />
+                <span className="font-medium">Minhas Vitrines</span>
+              </Link>
+
+              <Link
+                to="/planos"
+                className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Crown className="w-5 h-5 text-gray-500" />
+                <span className="font-medium">Planos</span>
+              </Link>
+
+              <Link
+                to="/configuracoes"
+                className="flex items-center gap-3 px-3 py-3 text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                <Settings className="w-5 h-5 text-gray-400" />
+                <span className="font-medium">Configurações</span>
+              </Link>
+
+              <div className="border-t border-gray-100 my-2" />
+
+              <button
+                onClick={() => {
+                  handleLogout()
+                  setIsMobileMenuOpen(false)
+                }}
+                className="w-full flex items-center gap-3 px-3 py-3 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="font-medium">Sair</span>
+              </button>
+            </nav>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.header>
   )
 }
