@@ -2,6 +2,8 @@ services:
   backend:
     build: ./backend
     restart: always
+    volumes:
+      - ./backend/uploads:/app/uploads
     env_file:
       - .env
     environment:
